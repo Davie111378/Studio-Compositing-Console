@@ -1,0 +1,21 @@
+# 密钥与环境 — 严禁入库
+.env
+*.key
+
+# 大文件与产物
+outputs/
+data/ai_generated/
+data/video/*.mp4
+training/checkpoints/
+ai-service/src/matting/birefnet_official/
+__pycache__/
+*.pyc
+.workbuddy/
+presentations/
+logs/
+tmp/
+*.webm
+
+# 夜间批量中间态保留指标(json/csv), 排除帧图
+agent/night/out/frames/
+agent/night/out/*.png
