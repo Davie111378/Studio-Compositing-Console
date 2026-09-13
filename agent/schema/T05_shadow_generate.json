@@ -1,0 +1,81 @@
+{
+  "id": "T05",
+  "name": "shadow_generate",
+  "version": "1.0",
+  "b_mapping": "ai-service/src/shadow/shadow_tool.ShadowTool().generate(alpha,bg,out,shadow_hint)",
+  "desc": "接触阴影: 程序化软阴影 (alpha 高斯模糊+偏移+衰减) 合入背景",
+  "quality_tiers": {
+    "draft": "blur8/opacity0.4",
+    "normal": "blur12/opacity0.5",
+    "fine": "blur16/opacity0.6"
+  },
+  "input": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "alpha_path": {
+        "type": "string"
+      },
+      "bg_path": {
+        "type": "string"
+      },
+      "light_dir": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        },
+        "description": "规范参数 → 适配层映射为 shadow_hint.direction"
+      },
+      "offset": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "blur_radius": {
+        "type": "number"
+      },
+      "opacity": {
+        "type": "number"
+      },
+      "quality": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "normal",
+          "fine"
+        ],
+        "default": "draft"
+      }
+    },
+    "required": [
+      "alpha_path",
+      "bg_path"
+    ]
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "shadow_bg_path": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "shadow_bg_path"
+    ]
+  },
+  "errors": [
+    {
+      "code": "E_INPUT_MISSING",
+      "message": "alpha/bg 不存在",
+      "retryable": false
+    }
+  ],
+  "latency_budget_ms": {
+    "draft": 150,
+    "fine": 250
+  }
+}

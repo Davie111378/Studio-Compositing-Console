@@ -1,0 +1,23 @@
+[train] data_root=data\matting_real  ckpt_root=training\checkpoints\refiner_real_v4
+[train] warm-start weights from training/checkpoints/refiner_real_v3/best.pt (src epoch=28, src best=0.01587717652392502)
+[train] AlphaRefiner params=3.35M device=cuda train=6745 val=208 bs=8
+ep 000/12 train=0.01663 val=0.01824 val_l1=0.00837 lr=4.92e-04 149.0s
+  -> new best val=0.01824 saved
+ep 001/12 train=0.01749 val=0.01706 val_l1=0.00681 lr=4.68e-04 149.0s
+  -> new best val=0.01706 saved
+ep 002/12 train=0.01611 val=0.01851 val_l1=0.00812 lr=4.30e-04 158.3s
+ep 003/12 train=0.01669 val=0.01843 val_l1=0.00810 lr=3.81e-04 151.1s
+ep 004/12 train=0.01534 val=0.01686 val_l1=0.00675 lr=3.24e-04 140.7s
+  -> new best val=0.01686 saved
+ep 005/12 train=0.01461 val=0.01583 val_l1=0.00601 lr=2.62e-04 135.5s
+  -> new best val=0.01583 saved
+ep 006/12 train=0.01401 val=0.01577 val_l1=0.00601 lr=2.01e-04 135.7s
+  -> new best val=0.01577 saved
+ep 007/12 train=0.01359 val=0.01598 val_l1=0.00612 lr=1.44e-04 135.1s
+ep 008/12 train=0.01369 val=0.01554 val_l1=0.00587 lr=9.46e-05 134.4s
+  -> new best val=0.01554 saved
+ep 009/12 train=0.01347 val=0.01549 val_l1=0.00585 lr=5.68e-05 134.8s
+  -> new best val=0.01549 saved
+ep 010/12 train=0.01335 val=0.01555 val_l1=0.00588 lr=3.31e-05 134.3s
+ep 011/12 train=0.01342 val=0.01552 val_l1=0.00587 lr=2.50e-05 134.5s
+[train] done. best val=0.01549 ckpt=training\checkpoints\refiner_real_v4

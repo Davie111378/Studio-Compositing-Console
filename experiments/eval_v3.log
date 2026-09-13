@@ -1,0 +1,14 @@
+[infer-size] 384 (训练尺寸, 取自 refiner_real_v3/config.json)
+[refine] v3 <- best.pt (epoch=28, best=0.01588) device=cuda
+  refined 200/1040 (11s)
+  refined 400/1040 (21s)
+  refined 600/1040 (31s)
+  refined 800/1040 (41s)
+  refined 1000/1040 (51s)
+[refine] 1040 preds in 54s -> D:\AIcode\生产实习\experiments\real_refiner_eval\preds_v3_384
+[coarse ] SAD=16876.77 MSE=0.005795 Grad=1554.17 Conn=0.0768 | hm: SAD=6436.55 Grad=110.21 Conn=0.1056 | p3m_np: SAD=10570.48 Grad=1701.77 Conn=0.0402 | p3m_p: SAD=24018.29 Grad=1522.10 Conn=0.1112
+[v3    ] SAD=15506.80 MSE=0.005878 Grad=1657.02 Conn=0.0799 | hm: SAD=5541.81 Grad=87.50 Conn=0.0988 | p3m_np: SAD=9121.00 Grad=1819.76 Conn=0.0438 | p3m_p: SAD=22689.80 Grad=1619.84 Conn=0.1145
+[gate] SAD drop=8.1% Grad_ok=False Conn_ok=False -> CHECK
+[studio-regression] n=24 refiner_studio L1=1.218% v3 L1=1.365% (+12.1%)
+[panel] -> D:\AIcode\生产实习\experiments\real_refiner_eval\panel_v3.png (col: img|coarse|refined|GT)
+[eval-real] DONE -> D:\AIcode\生产实习\experiments\real_refiner_eval\summary_v3.json

@@ -1,0 +1,155 @@
+{
+  "id": "T02",
+  "name": "background_generate",
+  "version": "1.1",
+  "b_mapping": "A 组负责: 素材库 ai-agent/assets.py (semantic 匹配, 0s) 或 agnes-image 文生图 (fine 档); 色度键直合成见 skills/green-screen-composite/scripts/green_key.py",
+  "desc": "背景生成/检索: 按 semantic 关键词检索素材库; fine 档或无匹配时文生图。mode=green_key 时直接把粗抠前景色度键合成到背景(适合绿幕边缘残留/需精确位置摆放的场景), 输出即为合成成片",
+  "quality_tiers": {
+    "draft": "assets 语义检索 (0s)",
+    "normal": "assets 语义检索",
+    "fine": "agnes-image 文生图 (10~20s)"
+  },
+  "input": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "file": {
+        "type": "string",
+        "description": "直接指定背景文件路径 (用户上传的背景图), 优先级最高"
+      },
+      "semantic": {
+        "type": "string",
+        "description": "中文语义关键词: 访谈/新闻LED/全景/综艺/播客/天气 或 0~5 序号"
+      },
+      "prompt": {
+        "type": "string",
+        "description": "文生图提示词 (fine 档或素材库无匹配时)"
+      },
+      "size": {
+        "type": "string",
+        "default": "1024x1024"
+      },
+      "quality": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "normal",
+          "fine"
+        ],
+        "default": "draft"
+      },
+      "mode": {
+        "type": "string",
+        "enum": [
+          "semantic",
+          "green_key"
+        ],
+        "default": "semantic",
+        "description": "green_key=色度键直接合成(app_fg 必填): 用 HSV 绿幕键把 app_fg 抠净后叠到背景, 输出 composite_path"
+      },
+      "app_fg": {
+        "type": "string",
+        "description": "mode=green_key 时的绿幕前景图 (人物原图, 非抠好的 fg)"
+      },
+      "green_scope": {
+        "type": "boolean",
+        "default": true,
+        "description": "mode=green_key: true=只在绿幕区域填背景, 场景画布保留(演播室桌台/LED屏不动, 画布=原图尺寸); false=传统模式把前景抠出摆到背景上(可用 fg_scale/center)。未指定时自动: 有 fg_scale/center → false, 否则 true"
+      },
+      "fg_scale": {
+        "type": "number",
+        "description": "mode=green_key: 前景相对背景的缩放比例, 如 0.55"
+      },
+      "center": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        },
+        "minItems": 2,
+        "maxItems": 2,
+        "description": "mode=green_key: 前景放置位置 [x,y] (左上角像素坐标), 默认居中"
+      },
+      "media_filter": {
+        "type": "string",
+        "description": "色卡滤镜文件名 (如 '5小纸条.png'), 对合成结果叠加 LUT 色调; 也支持 'auto' 走素材库滤镜"
+      },
+      "media_type": {
+        "type": "string",
+        "enum": [
+          "image",
+          "video"
+        ],
+        "default": "image",
+        "description": "green_key 合成媒体类型; video 时输出 mp4 (需 app_fg 为视频)"
+      }
+    },
+    "anyOf": [
+      {
+        "required": [
+          "file"
+        ]
+      },
+      {
+        "required": [
+          "semantic"
+        ]
+      },
+      {
+        "required": [
+          "prompt"
+        ]
+      },
+      {
+        "required": [
+          "app_fg"
+        ]
+      }
+    ]
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "bg_path": {
+        "type": "string"
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "assets",
+          "t2i",
+          "green_key"
+        ]
+      },
+      "composite_path": {
+        "type": "string",
+        "description": "mode=green_key 时的合成成片路径"
+      }
+    },
+    "required": [
+      "bg_path",
+      "source"
+    ]
+  },
+  "errors": [
+    {
+      "code": "E_SEMANTIC_MISS",
+      "message": "素材库无匹配且未给 prompt (可降级 t2i)",
+      "retryable": true
+    },
+    {
+      "code": "E_T2I_FAIL",
+      "message": "文生图失败(网络/限流)",
+      "retryable": true
+    },
+    {
+      "code": "E_GREENKEY_FAIL",
+      "message": "色度键合成失败(前景读取/滤镜缺失)",
+      "retryable": true
+    }
+  ],
+  "latency_budget_ms": {
+    "draft": 50,
+    "fine": 20000
+  }
+}

@@ -1,0 +1,8 @@
+{"id": "P1", "group": "E1_matting", "instruction": "把当前图里的主播台抠出来", "input_image": "data/studio_input/desk_news.png", "expect_tools": ["T01_matting"], "note": "最简抠图指令"}
+{"id": "P2", "group": "E2_fullchain", "instruction": "把主播台抠出来换到新闻LED演播室背景，重新打光并加投影，最后导出", "input_image": "data/studio_input/desk_news.png", "expect_tools": ["T01_matting", "T02_background_generate", "T06_harmonize"], "note": "完整换背景链"}
+{"id": "P3", "group": "E2_fullchain", "instruction": "换到访谈场景背景，保持自然光影，最后导出", "input_image": "data/studio_input/desk_news.png", "expect_tools": ["T01_matting", "T02_background_generate", "T06_harmonize"], "note": "语义背景=访谈"}
+{"id": "P4", "group": "E2_fullchain", "instruction": "把主播台搬到全景城市背景里，要求加影子，然后导出", "input_image": "data/studio_input/desk_news.png", "expect_tools": ["T01_matting", "T02_background_generate", "T05_shadow_generate"], "note": "语义背景=全景+阴影"}
+{"id": "P5", "group": "E3_enhance", "instruction": "对当前图做景深虚化，突出主体", "input_image": "data/studio_input/desk_news.png", "expect_tools": ["T07_enhance"], "note": "T07 depth_blur"}
+{"id": "P6", "group": "E3_enhance", "instruction": "画面有点糊，帮我锐化一下再导出", "input_image": "data/studio_input/desk_news.png", "expect_tools": ["T07_enhance"], "note": "T07 sharpen + T08"}
+{"id": "P7a", "group": "E4_multiturn", "instruction": "把主播台抠出来换到播客背景，重新打光加投影后导出", "input_image": "data/studio_input/desk_news.png", "expect_tools": ["T01_matting", "T02_background_generate", "T06_harmonize"], "note": "多轮第一跳：播客背景"}
+{"id": "P7b", "group": "E4_multiturn", "instruction": "rollback:综艺", "input_image": null, "expect_tools": ["T02_background_generate"], "note": "多轮第二跳：换综艺背景保留光照（条件回滚）"}

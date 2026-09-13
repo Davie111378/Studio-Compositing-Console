@@ -1,0 +1,69 @@
+{
+  "id": "T08",
+  "name": "export",
+  "version": "1.0",
+  "b_mapping": "A 组负责: 落盘 png + meta json (+可选 zip)",
+  "desc": "导出: 最终成片 + 元数据(json) 归档, 可选 zip",
+  "quality_tiers": {
+    "draft": "png only",
+    "normal": "png+meta",
+    "fine": "png+meta+zip"
+  },
+  "input": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "final_path": {
+        "type": "string"
+      },
+      "meta": {
+        "type": "object"
+      },
+      "make_zip": {
+        "type": "boolean",
+        "default": false
+      },
+      "quality": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "normal",
+          "fine"
+        ],
+        "default": "normal"
+      }
+    },
+    "required": [
+      "final_path"
+    ]
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "exported_path": {
+        "type": "string"
+      },
+      "meta_path": {
+        "type": "string"
+      },
+      "zip_path": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "exported_path"
+    ]
+  },
+  "errors": [
+    {
+      "code": "E_INPUT_MISSING",
+      "message": "成片不存在",
+      "retryable": false
+    }
+  ],
+  "latency_budget_ms": {
+    "draft": 50,
+    "fine": 300
+  }
+}

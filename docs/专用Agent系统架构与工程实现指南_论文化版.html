@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>专用 Agent 系统架构与工程实现指南（论文化美化版）</title>
+<style>
+  :root{
+    --ink:#1a2230;          /* 正文墨色 */
+    --dblue:#12325c;        /* 深蓝主色 */
+    --blue:#2c5f8a;         /* 中蓝 */
+    --lblue:#eef3f8;        /* 淡蓝底 */
+    --orange:#b4582b;       /* 反馈/强调色 */
+    --rule:#9aa7b6;         /* 表格主线 */
+    --rule2:#c6cfda;        /* 表格次线 */
+    --serif:"Georgia","Times New Roman","Source Han Serif SC","SimSun","Songti SC","STSong",serif;
+    --sans:"Segoe UI","Source Han Sans SC","Microsoft YaHei","PingFang SC",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--serif);
+    color:var(--ink);
+    font-size:10.5pt;
+    line-height:1.72;
+    background:#fff;
+  }
+  /* ---------- 打印分页 ---------- */
+  .page{ page-break-after:always; }
+  .page:last-child{ page-break-after:auto; }
+  @page{
+    size:A4;
+    margin:20mm 18mm 20mm 18mm;
+  }
+
+  /* ============ 封面 ============ */
+  .cover{ display:flex; flex-direction:column; justify-content:center;
+          min-height:240mm; text-align:center; }
+  .cover .kind{
+    font-family:var(--sans); color:var(--blue); letter-spacing:.35em;
+    font-size:10pt; margin-bottom:26px;
+  }
+  .cover h1{
+    font-size:27pt; line-height:1.3; color:var(--dblue); margin:0 0 10px;
+    font-weight:700; letter-spacing:.02em;
+  }
+  .cover .subtitle{
+    font-size:13pt; color:#41506b; margin:6px 0 44px; font-style:italic;
+  }
+  .cover .rule{ width:70px; height:3px; background:var(--orange); margin:0 auto 40px; }
+  .cover .meta{
+    margin:0 auto; border-top:1px solid var(--rule2); border-bottom:1px solid var(--rule2);
+    padding:14px 28px; display:inline-block; text-align:left; font-size:10pt;
+  }
+  .cover .meta p{ margin:4px 0; }
+  .cover .meta b{ font-family:var(--sans); color:var(--dblue); display:inline-block; width:88px; font-weight:600;}
+  .cover .foot{ margin-top:52px; color:#8a94a3; font-size:9pt; font-family:var(--sans);}
+
+  /* ============ 标题层级（论文式） ============ */
+  h1.section{
+    font-family:var(--sans); font-size:16pt; color:var(--dblue);
+    margin:4px 0 14px; padding-bottom:6px; border-bottom:1.4px solid var(--dblue);
+    break-before: page; page-break-before: always;
+    break-after: avoid; page-break-after: avoid;
+  }
+  h2.sub{ font-family:var(--sans); font-size:12.5pt; color:var(--dblue); margin:18px 0 6px; }
+  h3.mini{ font-family:var(--sans); font-size:11pt; color:var(--blue); margin:14px 0 4px; }
+
+  p{ margin:0 0 7px; text-align:justify; }
+  p.para{ text-indent:2em; }
+
+  /* 目录 */
+  .toc{ list-style:none; padding:0; margin:6px 0 0; font-family:var(--sans); font-size:11pt;}
+  .toc li{ margin:7px 0; display:flex; align-items:baseline;}
+  .toc .no{ display:inline-block; width:26px; color:var(--dblue); font-weight:600;}
+  .toc .dots{ flex:1; border-bottom:1px dotted var(--rule2); margin:0 6px;}
+  .toc .sub{ margin-left:26px; font-size:9.5pt; color:#4a5668;}
+
+  /* ============ 公式（居中编号） ============ */
+  .eq{ display:flex; align-items:baseline; justify-content:center; margin:14px 0;
+       font-family:var(--serif); font-size:12.5pt; }
+  .eq .formula{ font-style:italic; letter-spacing:.04em; }
+  .eq .no{ font-family:var(--sans); font-size:10pt; margin-left:26px; color:#41506b;}
+  .vars{ margin:8px 0 4px 34px; }
+  .vars li{ margin:2.5px 0; }
+  .vars .sym{ font-style:italic; font-family:var(--serif); display:inline-block; min-width:30px; color:var(--dblue); font-weight:600;}
+
+  /* ============ 三线表（booktabs 风格） ============ */
+  table.tab{ width:100%; border-collapse:collapse; margin:10px 0 4px; font-size:9.6pt; line-height:1.5; font-family:var(--sans);}
+  table.tab thead th{ border-top:1.6px solid var(--ink); border-bottom:0.8px solid var(--ink);
+                     padding:6px 8px; text-align:center; font-weight:600; color:var(--dblue);}
+  table.tab thead th:first-child{ text-align:left;}
+  table.tab tbody td{ padding:7px 9px; vertical-align:top; text-align:left;}
+  table.tab tbody td.c{ text-align:center;}
+  table.tab tbody tr:last-child td{ border-bottom:1.6px solid var(--ink);}
+  .caption{ font-family:var(--sans); font-size:10pt; color:var(--ink); margin:2px 0 8px; text-align:left;}
+  .caption .tag{ color:var(--dblue); font-weight:700; margin-right:4px;}
+  .tabnote{ font-family:var(--sans); font-size:8.6pt; color:#5b6675; margin:2px 0 8px;}
+
+  /* 层级小节 */
+  .layer{ margin:8px 0 4px; padding:8px 12px 8px 12px; background:var(--lblue); border-left:3px solid var(--dblue);}
+  .layer h3{ margin:0 0 4px; font-family:var(--sans); font-size:11pt; color:var(--dblue);}
+  .layer p{ margin:0 0 3px; text-indent:0; font-size:9.8pt;}
+
+  /* ============ 图1 学术流程图版式 ============ */
+  .fig{ page-break-inside:avoid; margin:12px 0 2px; }
+  .figwrap{ width:100%; }
+  .figwrap svg{ width:100%; height:auto; display:block; }
+  figcaption{ font-family:var(--sans); font-size:10pt; margin-top:5px; text-align:left;}
+  figcaption .tag{ color:var(--dblue); font-weight:700; margin-right:4px;}
+
+  footer.colophon{ margin-top:34px; padding-top:8px; border-top:1px solid var(--rule2);
+                   color:#7a8595; font-size:9pt; }
+</style>
+</head>
+<body>
+
+<!-- ================= 封面 ================= -->
+<section class="page cover">
+  <div class="kind">技术架构指南</div>
+  <h1>专用 Agent 系统架构与工程实现指南</h1>
+  <div class="subtitle">—— 从需求形式化到持续进化的全栈方法论 ——</div>
+  <div class="rule"></div>
+  <div class="meta">
+    <p><b>文档版本</b>　V1.1（论文美化版）</p>
+    <p><b>发布日期</b>　2026 年 9 月</p>
+    <p><b>文档类型</b>　技术架构指南</p>
+    <p><b>适用对象</b>　Agent 系统架构师 / 算法工程师</p>
+  </div>
+  <div class="foot">专用 Agent · Domain-Specific Agent · 八层架构方法论</div>
+</section>
+
+<!-- ================= 目录 ================= -->
+<section class="page">
+  <h1 class="section">目　录</h1>
+  <ul class="toc">
+    <li><span class="no">1</span>引言与核心公式<span class="dots"></span><span>3</span></li>
+    <li><span class="no">2</span>八层系统架构详解<span class="dots"></span><span>4</span></li>
+    <li><span class="no">3</span>系统架构流程图<span class="dots"></span><span>6</span></li>
+    <li><span class="no">4</span>关键工程决策矩阵<span class="dots"></span><span>8</span></li>
+    <li><span class="no">5</span>实施路线图与风险管理<span class="dots"></span><span>10</span></li>
+  </ul>
+</section>
+
+<!-- ================= 1 引言 ================= -->
+<section>
+  <h1 class="section">1　引言与核心公式</h1>
+  <p class="para">专用 Agent（Domain-Specific Agent）是指为特定任务场景设计的智能体系统。与通用 Agent 相比，其在输入空间、状态转移、动作空间及验证机制上均具有显式的领域约束。本指南提出一种八层架构模型，将整个 Agent 构建过程形式化为一套可复用、可演进、可验证的工程方法论，并给出关键决策点的选型依据与实施路线。</p>
+
+  <h2 class="sub">1.1　核心公式</h2>
+  <p class="para">一个专用 Agent 可形式化地表示为如下八元组，其中每个元素对应一个可独立工程化的组件：</p>
+  <div class="eq">
+    <span class="formula">Agent = ⟨ S, A, P, R, π, C, M, V ⟩</span>
+    <span class="no">(1)</span>
+  </div>
+  <ul class="vars">
+    <li><span class="sym">S</span>状态空间（State Space）</li>
+    <li><span class="sym">A</span>动作空间（Action Space）</li>
+    <li><span class="sym">P</span>状态转移函数（Transition Function）</li>
+    <li><span class="sym">R</span>奖励 / 效用函数（Reward / Utility Function）</li>
+    <li><span class="sym">π</span>策略（Policy）</li>
+    <li><span class="sym">C</span>约束集（Constraints）</li>
+    <li><span class="sym">M</span>记忆系统（Memory System）</li>
+    <li><span class="sym">V</span>验证器（Verifier）</li>
+  </ul>
+
+  <h2 class="sub">1.2　与通用 Agent 的本质差异</h2>
+  <p class="para">八元组中关键元件的不同取法，决定了专用 Agent 与通用 Agent 在若干根本维度上的分野，如表 1 所示。</p>
+  <table class="tab">
+    <thead><tr><th style="width:18%">维度</th><th>通用 Agent</th><th>专用 Agent</th></tr></thead>
+    <tbody>
+      <tr><td>状态空间</td><td>开放、高维、部分可观测</td><td>封闭、低维、完全可观测</td></tr>
+      <tr><td>动作空间</td><td>连续、无边界</td><td>离散、有限原子动作集</td></tr>
+      <tr><td>验证机制</td><td>事后评估、主观</td><td>实时校验、形式化</td></tr>
+      <tr><td>知识依赖</td><td>参数化知识（模型权重）</td><td>显式知识（RAG / 规则库）</td></tr>
+      <tr><td>错误容忍</td><td>低（需广泛鲁棒性）</td><td>可控（领域先验兜底）</td></tr>
+    </tbody>
+  </table>
+  <div class="caption"><span class="tag">表 1</span>专用 Agent 与通用 Agent 的本质差异对比</div>
+</section>
+
+<!-- ================= 2 八层架构 ================= -->
+<section class="page">
+  <h1 class="section">2　八层系统架构详解</h1>
+  <p class="para">八层架构自底向上覆盖从需求建模到持续进化的完整生命周期：底层提供形式化契约，中间层完成感知、认知与决策，上层保障验证、交互与进化。以下逐层阐述其职责与关键组件。</p>
+
+  <div class="layer"><h3>L0　需求形式化层</h3>
+    <p>将模糊的业务需求转化为形式化规约，是 Agent 构建的基石，其输出为后续所有层级的契约定义。</p>
+    <p>任务规约：定义输入空间 <i>X</i> 到输出空间 <i>Y</i> 的映射，明确值域与定义域；约束集 <i>C</i>：硬约束（安全 / 合规 / 法律）与软约束（风格 / 偏好 / 成本）的显式编码；效用函数 <i>U</i>：多目标优化标准（准确率、延迟、成本、可解释性的加权组合）；边界条件：定义系统拒识（Abstention）的触发条件。</p>
+  </div>
+
+  <div class="layer"><h3>L1　状态空间建模层</h3>
+    <p>将任务过程抽象为有限状态机或部分可观测马尔可夫决策过程（POMDP），为决策提供形式化基础。</p>
+    <p>状态表示：<i>S</i> = {任务状态, 环境状态, 代理状态} 三元组设计；状态转移：<i>P</i>(<i>s′</i>|<i>s</i>,<i>a</i>) 的显式（规则引擎）或隐式（学习模型）建模；终止条件：吸收态定义（成功 / 失败 / 截断），避免无限循环；可观测性：区分完全可观测（MDP）与部分可观测（POMDP）场景。</p>
+  </div>
+
+  <div class="layer"><h3>L2　感知与表征层</h3>
+    <p>负责将异构原始输入（文本 / 图像 / 音频 / 结构化数据）统一编码为内部表征，是 Agent 的感官系统。</p>
+    <p>多模态编码器：原始输入到嵌入向量 / 符号表示的统一接口；语义解析：AST（抽象语法树）/ 语义图 / JSON Schema 的结构化提取；置信度校准：不确定性量化（贝叶斯近似 / 深度集成 / 温度缩放）；异常检测：分布外（OOD）输入识别与拒识机制，防止幻觉传导。</p>
+  </div>
+
+  <div class="layer"><h3>L3　认知架构层</h3>
+    <p>Agent 的核心认知模块，负责任务规划、执行控制与记忆管理，其设计直接决定系统的智能上限。</p>
+    <p>规划器：HTN（层次任务网络）/ AND-OR 图 / LLM 规划的任务分解策略；执行器：原子动作库与复合动作序列化，支持并行 / 串行执行；工作记忆：上下文窗口管理 / 注意力分配 / 信息压缩策略；长期记忆：情景记忆（episodic）与语义记忆（semantic）的分离存储；元认知：自我监控（Self-Monitoring）与错误检测的反思机制。</p>
+  </div>
+
+  <div class="layer"><h3>L4　工具集成层</h3>
+    <p>将外部能力（API / 数据库 / 计算引擎）封装为 Agent 可调用的工具，是扩展性关键。</p>
+    <p>工具接口：Function Calling / MCP / OpenAPI 的标准化封装；能力注册：工具能力向量与前置条件约束的显式描述；编排策略：并行 / 串行 / 条件分支的执行图（DAG）调度；故障隔离：熔断机制 / 重试策略 / 降级方案的弹性设计。</p>
+  </div>
+
+  <div class="layer"><h3>L5　决策与控制层</h3>
+    <p>Agent 的决策中枢，负责在不确定环境下选择最优动作序列，平衡探索与利用。</p>
+    <p>策略网络：<i>π</i>(<i>a</i>|<i>s</i>) 的显式（规则引擎）或隐式（神经网络）实现；搜索算法：MCTS / 束搜索 / 最佳优先的启发式搜索；反思机制：Critic 模型评估与自我修正的循环迭代；人机协同：置信度阈值触发的人工介入协议（HITL）。</p>
+  </div>
+
+  <div class="layer"><h3>L6　验证与对齐层</h3>
+    <p>确保 Agent 输出符合预期且安全合规，是专用 Agent 区别于通用系统的核心保障。</p>
+    <p>形式化验证：逻辑一致性检查 / 类型系统 / 不变量维护；经验验证：执行结果与预期状态的差分检测；价值对齐：输出与约束集 <i>C</i> 的合规性校验；红队测试：对抗样本注入与鲁棒性评估。</p>
+  </div>
+
+  <div class="layer"><h3>L7　接口与交互层</h3>
+    <p>负责将内部状态与决策过程呈现给用户，支持人机协作与纠错。</p>
+    <p>呈现架构：渐进式披露（Progressive Disclosure）降低认知负荷；可解释性：决策轨迹可视化 / 注意力热图 / 因果链追踪；交互协议：纠正反馈的梯度回传（局部重规划 vs 全局重启）；状态同步：多轮对话中的上下文一致性维护。</p>
+  </div>
+
+  <div class="layer"><h3>L8　评估与进化层</h3>
+    <p>建立闭环反馈机制，驱动系统持续优化与能力进化。</p>
+    <p>离线评估：基准测试集 / 对抗评估 / 消融实验；在线评估：A/B 测试 / 多臂老虎机（MAB）参数调优；持续学习：经验回放 / 模型微调 / 知识库更新；系统进化：架构搜索（NAS）/ 超参数优化（HPO）。</p>
+  </div>
+</section>
+
+<section>
+  <h1 class="section">3　系统架构流程图</h1>
+  <p class="para">图 1 展示了专用 Agent 的完整数据流与控制流。八层之间通过标准化接口通信，支持模块化替换与独立演进；其中 L0 → L1 → … → L7 构成自底向上的构建与数据传递主干，L8 通过反馈信号驱动各层持续进化，形成闭环。</p>
+
+  <figure class="fig">
+    <div class="figwrap">
+      <!-- 学术风格八层架构流程图：主列 = L0..L8，左侧数据流↑ 右侧反馈环↓ -->
+      <svg viewBox="0 0 620 838" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI','Microsoft YaHei',sans-serif>
+  <defs>
+    <marker id="arrB" markerWidth="9" markerHeight="9" refX="5" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#2c5f8a"/></marker>
+    <marker id="arrO" markerWidth="9" markerHeight="9" refX="5" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#b4582b"/></marker>
+    <linearGradient id="gL" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#12325c"/><stop offset="100%" stop-color="#2c5f8a"/></linearGradient>
+  </defs>
+<line x1="74" y1="46" x2="74" y2="760" stroke="#c6cfda" stroke-width="2"/>
+<text x="74" y="38" text-anchor="middle" font-size="10" fill="#8a94a3">数据流</text>
+<line x1="560" y1="760" x2="560" y2="46" stroke="#b4582b" stroke-width="2" opacity="0.65" stroke-dasharray="5,4" marker-end="url(#arrO)"/>
+<text x="560" y="782" text-anchor="middle" font-size="10" fill="#b4582b">← L8 反馈 / 进化信号</text>
+<rect x="190.0" y="18" width="250" height="30" rx="15" fill="#eef3f8" stroke="#12325c" stroke-width="1.2"/>
+<text x="315.0" y="37" text-anchor="middle" font-size="12" fill="#12325c" font-weight="600">多模态原始输入</text>
+<rect x="170" y="62" width="290" height="60" rx="4" fill="#fff" stroke="#bcd0e4" stroke-width="1.0"/>
+<rect x="170" y="62" width="290" height="22" rx="4" fill="url(#gL)"/>
+<line x1="170" y1="84" x2="460" y2="84" stroke="#2c5f8a" stroke-width="1"/>
+<text x="182" y="77" font-size="11.5" fill="#fff" font-weight="600">L0　需求形式化层</text>
+<text x="182" y="104" font-size="9.6" fill="#2b3646">任务规约 · 约束集 C · 效用函数 U</text>
+<text x="182" y="122" font-size="9.6" fill="#2b3646">边界条件 / 系统拒识触发</text>
+<rect x="170" y="141" width="290" height="60" rx="4" fill="#fff" stroke="#bcd0e4" stroke-width="1.0"/>
+<rect x="170" y="141" width="290" height="22" rx="4" fill="url(#gL)"/>
+<line x1="170" y1="163" x2="460" y2="163" stroke="#2c5f8a" stroke-width="1"/>
+<text x="182" y="156" font-size="11.5" fill="#fff" font-weight="600">L1　状态空间建模层</text>
+<text x="182" y="183" font-size="9.6" fill="#2b3646">S={任务,环境,代理} · P(s′|s,a)</text>
+<text x="182" y="201" font-size="9.6" fill="#2b3646">终止条件 · MDP / POMDP 可观测</text>
+<rect x="170" y="220" width="290" height="60" rx="4" fill="#fff" stroke="#bcd0e4" stroke-width="1.0"/>
+<rect x="170" y="220" width="290" height="22" rx="4" fill="url(#gL)"/>
+<line x1="170" y1="242" x2="460" y2="242" stroke="#2c5f8a" stroke-width="1"/>
+<text x="182" y="235" font-size="11.5" fill="#fff" font-weight="600">L2　感知与表征层</text>
+<text x="182" y="262" font-size="9.6" fill="#2b3646">多模态编码 · 语义解析(AST/Schema)</text>
+<text x="182" y="280" font-size="9.6" fill="#2b3646">置信度校准 · OOD 拒识</text>
+<rect x="170" y="299" width="290" height="60" rx="4" fill="#fff" stroke="#bcd0e4" stroke-width="1.0"/>
+<rect x="170" y="299" width="290" height="22" rx="4" fill="url(#gL)"/>
+<line x1="170" y1="321" x2="460" y2="321" stroke="#2c5f8a" stroke-width="1"/>
+<text x="182" y="314" font-size="11.5" fill="#fff" font-weight="600">L3　认知架构层</text>
+<text x="182" y="341" font-size="9.6" fill="#2b3646">规划器 · 执行器 · 工作/长期记忆</text>
+<text x="182" y="359" font-size="9.6" fill="#2b3646">元认知 / 自我监控与纠错</text>
+<rect x="170" y="378" width="290" height="60" rx="4" fill="#fff" stroke="#bcd0e4" stroke-width="1.0"/>
+<rect x="170" y="378" width="290" height="22" rx="4" fill="url(#gL)"/>
+<line x1="170" y1="400" x2="460" y2="400" stroke="#2c5f8a" stroke-width="1"/>
+<text x="182" y="393" font-size="11.5" fill="#fff" font-weight="600">L4　工具集成层</text>
+<text x="182" y="420" font-size="9.6" fill="#2b3646">FC / MCP / OpenAPI · 能力注册</text>
+<text x="182" y="438" font-size="9.6" fill="#2b3646">DAG 编排 · 熔断/重试/降级</text>
+<rect x="170" y="457" width="290" height="60" rx="4" fill="#fff" stroke="#bcd0e4" stroke-width="1.0"/>
+<rect x="170" y="457" width="290" height="22" rx="4" fill="url(#gL)"/>
+<line x1="170" y1="479" x2="460" y2="479" stroke="#2c5f8a" stroke-width="1"/>
+<text x="182" y="472" font-size="11.5" fill="#fff" font-weight="600">L5　决策与控制层</text>
+<text x="182" y="499" font-size="9.6" fill="#2b3646">策略 π(a|s) · MCTS / 束搜索</text>
+<text x="182" y="517" font-size="9.6" fill="#2b3646">Critic 反思循环 · HITL</text>
+<rect x="170" y="536" width="290" height="60" rx="4" fill="#fff" stroke="#bcd0e4" stroke-width="1.0"/>
+<rect x="170" y="536" width="290" height="22" rx="4" fill="url(#gL)"/>
+<line x1="170" y1="558" x2="460" y2="558" stroke="#2c5f8a" stroke-width="1"/>
+<text x="182" y="551" font-size="11.5" fill="#fff" font-weight="600">L6　验证与对齐层</text>
+<text x="182" y="578" font-size="9.6" fill="#2b3646">形式化验证 · 经验差分检测</text>
+<text x="182" y="596" font-size="9.6" fill="#2b3646">价值对齐 · 红队测试</text>
+<rect x="170" y="615" width="290" height="60" rx="4" fill="#fff" stroke="#bcd0e4" stroke-width="1.0"/>
+<rect x="170" y="615" width="290" height="22" rx="4" fill="url(#gL)"/>
+<line x1="170" y1="637" x2="460" y2="637" stroke="#2c5f8a" stroke-width="1"/>
+<text x="182" y="630" font-size="11.5" fill="#fff" font-weight="600">L7　接口与交互层</text>
+<text x="182" y="657" font-size="9.6" fill="#2b3646">渐进式披露 · 轨迹可视化</text>
+<text x="182" y="675" font-size="9.6" fill="#2b3646">纠正反馈 · 上下文同步</text>
+<rect x="170" y="694" width="290" height="60" rx="4" fill="#fff" stroke="#b4582b" stroke-width="1.3"/>
+<rect x="170" y="694" width="290" height="22" rx="4" fill="#b4582b"/>
+<line x1="170" y1="716" x2="460" y2="716" stroke="#b4582b" stroke-width="1"/>
+<text x="182" y="709" font-size="11.5" fill="#fff" font-weight="600">L8　评估与进化层</text>
+<text x="182" y="736" font-size="9.6" fill="#2b3646">离线/在线评估 · 持续学习</text>
+<text x="182" y="754" font-size="9.6" fill="#2b3646">NAS / HPO 系统进化</text>
+<line x1="315.0" y1="122" x2="315.0" y2="139" stroke="#2c5f8a" stroke-width="2" marker-end="url(#arrB)"/>
+<line x1="315.0" y1="201" x2="315.0" y2="218" stroke="#2c5f8a" stroke-width="2" marker-end="url(#arrB)"/>
+<line x1="315.0" y1="280" x2="315.0" y2="297" stroke="#2c5f8a" stroke-width="2" marker-end="url(#arrB)"/>
+<line x1="315.0" y1="359" x2="315.0" y2="376" stroke="#2c5f8a" stroke-width="2" marker-end="url(#arrB)"/>
+<line x1="315.0" y1="438" x2="315.0" y2="455" stroke="#2c5f8a" stroke-width="2" marker-end="url(#arrB)"/>
+<line x1="315.0" y1="517" x2="315.0" y2="534" stroke="#2c5f8a" stroke-width="2" marker-end="url(#arrB)"/>
+<line x1="315.0" y1="596" x2="315.0" y2="613" stroke="#2c5f8a" stroke-width="2" marker-end="url(#arrB)"/>
+<line x1="315.0" y1="675" x2="315.0" y2="692" stroke="#2c5f8a" stroke-width="2" marker-end="url(#arrB)"/>
+<rect x="185.0" y="780" width="260" height="30" rx="15" fill="#f4efe8" stroke="#b4582b" stroke-width="1.2"/>
+<text x="315.0" y="799" text-anchor="middle" font-size="12" fill="#b4582b" font-weight="600">任务输出 · 决策 / 结果呈现</text>
+</svg>
+    </div>
+    <figcaption><span class="tag">图 1</span>专用 Agent 八层架构的数据流（主列向上汇聚）与控制流/进化反馈（右侧橙色回环）。</figcaption>
+  </figure>
+</section>
+
+<!-- ================= 4 决策矩阵 ================= -->
+<section class="page">
+  <h1 class="section">4　关键工程决策矩阵</h1>
+  <p class="para">在设计与实现过程中，以下五个决策点对系统架构具有根本性影响，需在项目初期明确选型。表 2 汇总各决策点的候选方案与选型依据，其后分别讨论。</p>
+  <table class="tab">
+    <thead><tr><th style="width:15%">决策点</th><th>选项 A</th><th>选项 B</th><th>选项 C</th><th style="width:20%">选型依据</th></tr></thead>
+    <tbody>
+      <tr><td>状态表示</td><td>符号状态（可解释）</td><td>神经状态（端到端）</td><td>混合（神经符号）</td><td>任务可解释性要求与数据规模</td></tr>
+      <tr><td>控制策略</td><td>反应式（Reactive）</td><td>审慎式（Deliberative）</td><td>混合架构（如 BDI）</td><td>实时性要求与任务复杂度</td></tr>
+      <tr><td>记忆架构</td><td>参数记忆（模型权重）</td><td>显式记忆（外部数据库）</td><td>缓存记忆（KV-Cache）</td><td>知识更新频率与上下文长度</td></tr>
+      <tr><td>错误恢复</td><td>回滚（Rollback）</td><td>补偿（Compensation）</td><td>重规划（Replanning）</td><td>状态可逆性与副作用成本</td></tr>
+      <tr><td>延迟-质量权衡</td><td>单遍生成（Low Latency）</td><td>多轮反思（High Quality）</td><td>投机执行（Speculative）</td><td>用户容忍延迟与错误成本</td></tr>
+    </tbody>
+  </table>
+  <div class="caption"><span class="tag">表 2</span>五个关键工程决策点与其候选方案</div>
+
+  <h2 class="sub">4.1　状态表示选型</h2>
+  <p class="para">符号状态适用于规则明确、可解释性要求高的场景（如法律合规、医疗诊断），但维护成本随规则数量指数增长。神经状态适用于模式识别、模糊匹配场景，但存在黑盒问题。混合架构（神经符号）通过神经网络提取特征、符号系统执行推理，在复杂专用 Agent 中表现最优。</p>
+
+  <h2 class="sub">4.2　控制策略选型</h2>
+  <p class="para">反应式架构（如有限状态机、行为树）适用于毫秒级响应场景，但缺乏长远规划能力。审慎式架构（如 HTN、规划域理论）适用于复杂任务分解，但延迟较高。BDI（信念-欲望-意图）等混合架构通过分层控制，兼顾反应速度与规划深度，是当前专用 Agent 的主流选择。</p>
+
+  <h2 class="sub">4.3　记忆架构选型</h2>
+  <p class="para">参数记忆将知识固化于模型权重，更新成本高但推理速度快。显式记忆（RAG）支持动态知识更新，适用于知识频繁变更的场景。缓存记忆（KV-Cache）优化长上下文推理的延迟，但受限于上下文窗口大小。实践中常采用三级缓存策略：热数据（KV-Cache）→ 温数据（向量数据库）→ 冷数据（参数记忆）。</p>
+
+  <h2 class="sub">4.4　错误恢复机制</h2>
+  <p class="para">回滚机制适用于状态可逆、无副作用的纯计算场景；补偿机制适用于已产生外部副作用的场景（如已发送的邮件、已执行的支付），通过逆操作抵消影响；重规划机制适用于状态不可逆或补偿成本过高的场景，放弃当前轨迹并基于新状态重新规划。</p>
+
+  <h2 class="sub">4.5　延迟-质量权衡</h2>
+  <p class="para">单遍生成（Single-Pass）通过一次前向传播产生输出，延迟最低但质量受限；多轮反思（Multi-Pass Reflection）通过 Critic 模型迭代优化，质量最高但延迟成倍增加；投机执行（Speculative Execution）并行生成多个候选路径，提前验证后选择最优，在延迟与质量间取得平衡。</p>
+</section>
+
+<!-- ================= 5 路线图 ================= -->
+<section>
+  <h1 class="section">5　实施路线图与风险管理</h1>
+  <p class="para">基于上述架构，建议按四个阶段推进构建与落地并设置明确的里程碑与验收标准，避免过度设计。各阶段交付物与验收指标如表 3 所示，关键风险及应对见表 4。</p>
+
+  <table class="tab">
+    <thead><tr><th style="width:14%">阶段</th><th style="width:9%">周期</th><th>核心任务</th><th>关键交付物</th><th style="width:26%">验收标准</th></tr></thead>
+    <tbody>
+      <tr><td>Phase 1<br>架构设计</td><td class="c">2–3 周</td>
+        <td>需求形式化（L0）<br>状态空间建模（L1）<br>技术选型决策</td>
+        <td>需求规格说明书<br>状态转移图<br>技术选型文档</td>
+        <td>约束集 C 完整定义<br>状态空间覆盖所有场景<br>决策矩阵评审通过</td></tr>
+      <tr><td>Phase 2<br>核心实现</td><td class="c">4–6 周</td>
+        <td>感知层开发（L2）<br>认知架构搭建（L3）<br>工具集成（L4）</td>
+        <td>多模态处理 Pipeline<br>规划器 / 执行器模块<br>工具注册中心</td>
+        <td>输入解析准确率 &gt; 95%<br>任务分解成功率 &gt; 90%<br>工具调用成功率 &gt; 99%</td></tr>
+      <tr><td>Phase 3<br>控制优化</td><td class="c">3–4 周</td>
+        <td>决策层开发（L5）<br>验证对齐层（L6）<br>接口交互层（L7）</td>
+        <td>策略引擎<br>验证器模块<br>前端交互界面</td>
+        <td>端到端任务成功率 &gt; 85%<br>验证覆盖率 &gt; 95%<br>用户满意度 &gt; 4.0 / 5.0</td></tr>
+      <tr><td>Phase 4<br>评估进化</td><td class="c">持续</td>
+        <td>评估体系搭建（L8）<br>监控告警部署<br>持续迭代优化</td>
+        <td>评估基准集<br>监控 Dashboard<br>迭代优化报告</td>
+        <td>离线基准通过率 &gt; 90%<br>线上错误率 &lt; 1%<br>月度能力进化指标</td></tr>
+    </tbody>
+  </table>
+  <div class="caption"><span class="tag">表 3</span>四阶段实施路线图与验收标准</div>
+
+  <h2 class="sub">5.1　关键风险与对策</h2>
+  <table class="tab">
+    <thead><tr><th style="width:12%">风险类别</th><th>风险描述</th><th class="c" style="width:9%">概率</th><th class="c" style="width:9%">影响</th><th>应对策略</th></tr></thead>
+    <tbody>
+      <tr><td>技术风险</td><td>多模态解析准确率不达标</td><td class="c">中</td><td class="c">高</td><td>引入人工校验环节；优化预处理 Pipeline；增加训练数据</td></tr>
+      <tr><td>工程风险</td><td>工具调用延迟过高</td><td class="c">中</td><td class="c">中</td><td>实施缓存策略；并行化工具调用；降级方案兜底</td></tr>
+      <tr><td>数据风险</td><td>领域知识库覆盖不足</td><td class="c">高</td><td class="c">高</td><td>优先覆盖高频场景；建立知识更新机制；引入专家审核</td></tr>
+      <tr><td>合规风险</td><td>输出违反领域约束</td><td class="c">低</td><td class="c">极高</td><td>强化 L6 验证层；设置人工审核节点；建立红队测试集</td></tr>
+    </tbody>
+  </table>
+  <div class="caption"><span class="tag">表 4</span>关键风险类别、概率、影响与应对策略</div>
+
+  <h2 class="sub">5.2　结语</h2>
+  <p class="para">专用 Agent 的构建是一个系统工程，需要在形式化建模、认知架构、工具集成与验证对齐之间取得平衡。本指南提出的八层架构模型与工程决策矩阵，旨在为开发者提供一套可复用的方法论框架。实践中，建议从最小可行产品（MVP）出发，优先验证核心链路的可行性，再逐步扩展至完整架构。好的专用 Agent 不在于功能的广度，而在于对特定场景的深度理解与工程化落地能力。</p>
+
+  <footer class="colophon">本文档为《专用 Agent 系统架构与工程实现指南》论文化美化版，由原始技术架构指南排版重制，用于提升可读性与演示效果。内容基于 2026 年 9 月发布版本。</footer>
+</section>
+
+</body>
+</html>

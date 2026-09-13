@@ -1,0 +1,14 @@
+{
+  "w_new": "D:\\AIcode\\生产实习\\training\\checkpoints\\refiner_mixed_v2\\best.pt",
+  "desk_object_ood": {
+    "old_studio_refiner_mad_vs_coarse": 0.3816,
+    "mixed_refiner_mad_vs_coarse": 0.0301,
+    "mixed_fg_ratio": "8.4%",
+    "coarse_fg_ratio": "11.7%"
+  },
+  "studio_person_domain": {
+    "studio_test_n": 24,
+    "mixed_refiner_val_l1": "3.16%",
+    "old_studio_refiner_val_l1": "0.96%"
+  }
+}

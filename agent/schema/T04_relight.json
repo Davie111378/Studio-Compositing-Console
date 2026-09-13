@@ -1,0 +1,94 @@
+{
+  "id": "T04",
+  "name": "relight",
+  "version": "1.0",
+  "b_mapping": "ai-service/src/relighting/relight_tool.RelightTool(method=directional).relight(fg,bg,out,light_hint)",
+  "desc": "前景重打光: 方向光渐变+色温; light_dir 可由 T03 输出传入 (规范 light_dir ↔ 实机 direction 已在适配层映射)",
+  "quality_tiers": {
+    "draft": "directional 强度0.6",
+    "normal": "directional 强度0.8",
+    "fine": "directional 强度1.0"
+  },
+  "input": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "fg_path": {
+        "type": "string"
+      },
+      "bg_path": {
+        "type": "string"
+      },
+      "light_dir": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        },
+        "minItems": 2,
+        "maxItems": 2,
+        "description": "规范参数; 适配层映射为 B 的 direction:[dx,dy]"
+      },
+      "color_temp": {
+        "type": "string",
+        "enum": [
+          "warm",
+          "cool",
+          "neutral"
+        ]
+      },
+      "color_temp_strength": {
+        "type": "number"
+      },
+      "intensity": {
+        "type": "number"
+      },
+      "quality": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "normal",
+          "fine"
+        ],
+        "default": "draft"
+      }
+    },
+    "required": [
+      "fg_path",
+      "bg_path"
+    ]
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "relit_fg_path": {
+        "type": "string"
+      },
+      "direction": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        }
+      }
+    },
+    "required": [
+      "relit_fg_path"
+    ]
+  },
+  "errors": [
+    {
+      "code": "E_INPUT_MISSING",
+      "message": "fg/bg 不存在",
+      "retryable": false
+    },
+    {
+      "code": "E_RELIGHT_FAIL",
+      "message": "重打光失败",
+      "retryable": true
+    }
+  ],
+  "latency_budget_ms": {
+    "draft": 400,
+    "fine": 600
+  }
+}

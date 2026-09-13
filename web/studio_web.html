@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>演播室图像合成工作台</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: "Microsoft YaHei", sans-serif; background: #20242b; color: #e8eaed;
+         display: flex; height: 100vh; overflow: hidden; }
+  #panel { width: 300px; padding: 14px; background: #2a2f38; overflow-y: auto; flex-shrink: 0; }
+  #panel h3 { font-size: 14px; margin: 14px 0 6px; color: #8ab4f8; }
+  #panel h3:first-child { margin-top: 0; }
+  button { background: #3c4043; color: #e8eaed; border: 1px solid #5f6368; border-radius: 6px;
+           padding: 7px 10px; cursor: pointer; width: 100%; margin: 3px 0; font-size: 13px; }
+  button:hover { background: #4a4d51; }
+  button.primary { background: #1a73e8; border-color: #1a73e8; }
+  select, input[type=file] { width: 100%; margin: 3px 0; padding: 5px; background: #3c4043;
+           color: #e8eaed; border: 1px solid #5f6368; border-radius: 6px; font-size: 13px; }
+  label.chk { display: block; font-size: 13px; margin: 3px 0; color: #bdc1c6; }
+  #stage { flex: 1; display: flex; align-items: center; justify-content: center;
+           padding: 14px; position: relative; }
+  #wrap { position: relative; }
+  #cv, #ov { display: block; border: 1px solid #5f6368; }
+  #ov { position: absolute; top: 0; left: 0; cursor: crosshair; }
+  #status { position: absolute; bottom: 0; left: 0; right: 0; background: #111;
+            padding: 8px 14px; font-size: 13px; color: #9aa0a6; }
+  .hint { font-size: 12px; color: #9aa0a6; margin: 4px 0; }
+</style>
+</head>
+<body>
+<div id="panel">
+  <h3>① 选择绿幕图片</h3>
+  <input type="file" id="file" accept="image/*">
+  <div class="hint">或使用预置素材:</div>
+  <select id="fgList"></select>
+  <div class="hint">抠图引擎:</div>
+  <select id="engine">
+    <option value="hybrid">hybrid (色度键+BiRefNet 补洞, 推荐)</option>
+    <option value="chroma">chroma (纯色度键, 最快)</option>
+    <option value="refiner">refiner (BiRefNet+精修, 非绿幕图用)</option>
+  </select>
+
+  <h3>② 圈选与抠图</h3>
+  <div class="hint">圈选方式:</div>
+  <label class="chk"><input type="radio" name="drawmode" value="rect" checked> 矩形框 (拖拽)</label>
+  <label class="chk"><input type="radio" name="drawmode" value="free"> 自由笔 (徒手画圈/画圆)</label>
+  <div class="hint">画好的框/圈用于 (三选一):</div>
+  <label class="chk"><input type="radio" name="selmode" value="remove" checked>
+    <b>删除圈内内容</b> (洞自动用原图背景填补, 丝滑衔接)</label>
+  <label class="chk"><input type="radio" name="selmode" value="grabcut"> GrabCut 抠出目标 (换背景用)</label>
+  <label class="chk"><input type="radio" name="selmode" value="fx"> 特效区域 (只作用圈内)</label>
+  <button onclick="doRemove()">✂ 删除圈内内容</button>
+  <button onclick="doMatting()">自动抠图 (整图, 换背景用)</button>
+  <button onclick="doGrabcut()">按圈选 GrabCut 抠出目标</button>
+  <div class="hint">或圈选后直接点画布上的「✓ 确认抠图」。</div>
+  <button onclick="clearSel()">清除圈选</button>
+
+  <h3>③ 背景叠加 / 绿幕替换</h3>
+  <input type="file" id="bgFile" accept="image/*">
+  <div class="hint">或选预置背景:</div>
+  <select id="bgList"></select>
+  <label class="chk"><input type="checkbox" id="optHarm" checked> 和谐化 (防压黑)</label>
+  <label class="chk"><input type="checkbox" id="optLight" checked> 重打光 (方向光)</label>
+  <label class="chk"><input type="checkbox" id="optShadow" checked> 接触阴影</label>
+  <button class="primary" onclick="doComposite()">背景叠加 (抠出人物换背景)</button>
+  <button onclick="doGreenscreen()">🎞 绿幕替换 (只换绿幕区域, 保留原图其余部分)</button>
+
+  <h3>④ 特效库 (自动定位+自动拉伸)</h3>
+  <label class="chk"><input type="checkbox" id="fxPick" onchange="toggleFxPick(this.checked)">
+    🎯 特效位置圈选模式 (开=画框即特效放置位置)</label>
+  <div class="hint" id="fxPickHint" style="display:none;color:#8ab4f8">
+    已开: 在图上拖拽框选特效放置区域(蓝框)。可反复重画。</div>
+  <div class="hint">定位方式:</div>
+  <label class="chk"><input type="radio" name="fxpos" value="auto" checked> 自动(按类型) / 圈选区优先</label>
+  <label class="chk"><input type="radio" name="fxpos" value="center"> 居中</label>
+  <label class="chk"><input type="radio" name="fxpos" value="corner"> 角落(贴纸/水印用)</label>
+  <div class="hint">特效大小: <span id="efp">0.5</span></div>
+  <input type="range" id="fxscale" min="0.2" max="1" step="0.05" value="0.5"
+         oninput="document.getElementById('efp').textContent=this.value">
+  <button style="width:auto;padding:4px 8px;margin:2px 0" onclick="clearFxSel()">清除特效圈选</button>
+  <div class="hint" style="display:flex;flex-wrap:wrap" id="fxTabs"></div>
+  <div id="fxGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"></div>
+  <button class="primary" onclick="applyAutoFx()">✨ 应用所选特效</button>
+  <div class="hint">分类: 滤镜 / 风格 / 光影 / 贴纸道具 / 水印边框 / 局部美化</div>
+
+  <h3>⑤ 恢复与撤销</h3>
+  <button onclick="resetAll()">⟲ 恢复到原图 (绿幕状态)</button>
+  <button onclick="undo()">↩ 撤销上一步</button>
+
+  <h3>⑥ AI Agent 文本交互 (agnes LLM)</h3>
+  <div class="hint">输入一句中文/英文指令, Agent 自动规划并调用抠图/换背景/特效/视频等工具完成任务流。</div>
+  <textarea id="agentInput" rows="3" style="width:100%;padding:6px;box-sizing:border-box;font-size:14px"
+    placeholder="例: 把绿幕女主播 fg_02 抠图, 放到访谈背景, 加青橙电影滤镜"></textarea>
+  <div style="display:flex;gap:6px;margin-top:4px">
+    <button class="primary" onclick="agentChat()">🤖 Agent 执行</button>
+    <button onclick="agentReset()">清空会话</button>
+    <label class="chk" style="margin-left:auto"><input type="checkbox" id="agentCritic" checked> VLM 自评</label>
+  </div>
+  <div id="agentStatus" class="hint" style="min-height:18px"></div>
+  <details open>
+    <summary class="hint" style="cursor:pointer">📋 计划与执行日志</summary>
+    <div id="agentPlan" class="hint" style="white-space:pre-wrap;background:#2a2f38;padding:6px;border-radius:4px"></div>
+  </details>
+  <details>
+    <summary class="hint" style="cursor:pointer">🔧 工具调用明细</summary>
+    <div id="agentSteps" class="hint"></div>
+  </details>
+  <div id="agentFinal" class="hint" style="white-space:pre-wrap"></div>
+  <div id="agentCriticOut" class="hint" style="white-space:pre-wrap;color:#a0c4ff"></div>
+  <div id="agentCur" style="margin-top:6px"></div>
+
+  <h3>⑧ Agent v2 · Planner-DAG (八层架构版)</h3>
+  <div class="hint">模型: <b>agnes-3.0-flash</b> (规划/Critic/汇报) · agnes-image-2.5-flash (文生图) — 智能体输出 token 全走 agnes API</div>
+  <textarea id="dagInput" rows="2" style="width:100%;padding:6px;box-sizing:border-box;font-size:14px"
+    placeholder="例: 把 fg_02_anchor_female.png 抠图放到综艺背景"></textarea>
+  <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+    <button class="primary" onclick="dagSend()">🤖 执行</button>
+    <input id="dagRollbackBg" placeholder="回滚背景→语义" style="width:110px;padding:5px">
+    <button onclick="dagRollback()">↩ 回滚(保留光照)</button>
+    <button onclick="dagReset()">清空</button>
+    <label class="chk" style="margin-left:auto"><input type="checkbox" id="dagCritic" checked> Critic 自评</label>
+  </div>
+  <div id="dagStatus" class="hint" style="min-height:16px"></div>
+  <div id="dagChat" style="max-height:260px;overflow:auto;font-size:13px"></div>
+  <div id="dagPreview" style="margin-top:6px"></div>
+
+  <h3>⑦ 视频处理 (新)</h3>
+  <input type="file" id="vidFile" accept="video/*">
+  <div class="hint">或选预置:</div>
+  <select id="vidList"></select>
+  <div class="hint" id="vidInfo" style="color:#8ab4f8"></div>
+  <div class="hint">视频任务:</div>
+  <label class="chk"><input type="radio" name="vidTask" value="replace_bg" checked> 视频换背景</label>
+  <label class="chk"><input type="radio" name="vidTask" value="filter"> 视频滤镜 (全视频统一)</label>
+  <label class="chk"><input type="radio" name="vidTask" value="mosaic"> 局部打码 (按固定区域)</label>
+  <label class="chk"><input type="radio" name="vidTask" value="combo"> 组合(换背景+滤镜+水印)</label>
+  <div class="hint">背景图: <span id="vidBgHint">默认用访谈背景</span></div>
+  <select id="vidBgList"></select>
+  <div class="hint">滤镜选择 (组合/单滤镜任务):</div>
+  <select id="vidFilter">
+    <option value="">(无)</option>
+    <option value="teal_orange">青橙电影</option>
+    <option value="film_golden">黄金时刻</option>
+    <option value="bw_noir">黑白暗影</option>
+    <option value="cyberpunk">赛博朋克</option>
+    <option value="warm">暖色温</option>
+    <option value="cool">冷色温</option>
+  </select>
+  <button class="primary" onclick="doVideoProcess()">🎬 处理视频</button>
+  <div id="vidStatus" class="hint"></div>
+  <video id="vidPreview" controls style="display:none;width:100%;max-height:300px;margin-top:6px"></video>
+  <a id="vidDownload" style="display:none" class="hint">⬇ 下载结果</a>
+
+  <button onclick="doSave()">保存结果 PNG</button>
+  <div class="hint">命令行批量版: app/studio_cli.py (同一引擎)</div>
+</div>
+
+<div id="stage">
+  <div id="wrap">
+    <canvas id="cv"></canvas>
+    <canvas id="ov"></canvas>
+    <div id="confirmBox" style="display:none; position:absolute; z-index:10;
+         background:#2a2f38; border:1px solid #5f6368; border-radius:8px; padding:8px; box-shadow:0 2px 10px #0008;">
+      <button id="confirmYes" class="primary" style="width:auto; padding:6px 14px;">✓ 确认抠图</button>
+      <button id="confirmNo" style="width:auto; padding:6px 14px;">✕ 取消</button>
+    </div>
+  </div>
+  <div id="status">就绪。选择一张绿幕图片开始。</div>
+</div>
+
+<script>
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const ov = document.getElementById('ov'), octx = ov.getContext('2d');
+let curPath = null;        // 当前显示图路径 (remove/fx 作用在它上面)
+let origPath = null;       // 绿幕原图 (背景叠加永远从它重新开始)
+let alphaPath = null;      // 最近一次抠图的 alpha
+let scale = 1;             // 显示缩放
+let sel = null;            // 圈选 {type:'rect',x1,y1,x2,y2} | {type:'poly',points:[[x,y]..]}
+let fxSel = null;          // 特效位置独立圈选(蓝框) {x1,y1,x2,y2} 原图坐标
+let fxPickOn = false;      // 特效位置圈选是否开启
+let drag = null, freePts = null;
+let hist = [];               // 撤销栈: {path, alphaPath}
+function pushHist(){ hist.push({path: curPath, alphaPath}); if (hist.length > 20) hist.shift(); }
+function hideConfirm(){ document.getElementById('confirmBox').style.display = 'none'; }
+function placeConfirm(){
+  const box = document.getElementById('confirmBox');
+  let px = 20, py = 20;
+  if (sel){
+    if (sel.type === 'rect'){ px = sel.x2*scale + 10; py = sel.y1*scale; }
+    else { const xs = sel.points.map(p=>p[0]), ys = sel.points.map(p=>p[1]);
+           px = Math.max(...xs)*scale + 10; py = Math.min(...ys)*scale; }
+  }
+  px = Math.min(px, ov.width - 190); py = Math.min(py, ov.height - 60);
+  box.style.left = Math.max(px, 8) + 'px'; box.style.top = Math.max(py, 8) + 'px';
+  box.style.display = 'block';
+}
+function resetAll(){
+  if (!origPath) return log('没有可恢复的原图');
+  pushHist();
+  alphaPath = null; sel = null; fxSel = null; clearOv(); hideConfirm();
+  showPath(origPath);
+  log('已恢复到原图 (绿幕状态)。');
+}
+
+function log(s){ document.getElementById('status').textContent = s; }
+
+// ---------- 显示: 底图画图, overlay 画框 (互不干扰, 杜绝整图消失/闪烁) ----------
+function showPath(path){
+  curPath = path;
+  sel = null; clearOv();
+  // fxSel 保留(特效位置圈选持久), 换图/重置时在 resetAll 里清
+  const im = new Image();
+  im.onload = () => {
+    const maxW = window.innerWidth - 380, maxH = window.innerHeight - 80;
+    scale = Math.min(maxW / im.width, maxH / im.height, 1);
+    const dw = Math.round(im.width * scale), dh = Math.round(im.height * scale);
+    cv.width = dw; cv.height = dh;
+    ov.width = dw; ov.height = dh;
+    ov.style.width = dw + 'px'; ov.style.height = dh + 'px';
+    ctx.drawImage(im, 0, 0, dw, dh);
+  };
+  im.onerror = () => log('图片加载失败: ' + path);
+  im.src = '/file?path=' + encodeURIComponent(path) + '&t=' + Date.now();
+}
+
+function drawSel(){
+  clearOv();
+  // 特效位置圈选 (蓝框) 独立显示
+  if (fxSel){
+    octx.strokeStyle = '#4fc3f7'; octx.lineWidth = 2; octx.setLineDash([3,3]);
+    octx.strokeRect(fxSel.x1*scale, fxSel.y1*scale, (fxSel.x2-fxSel.x1)*scale, (fxSel.y2-fxSel.y1)*scale);
+    octx.fillStyle = 'rgba(79,195,247,0.08)';
+    octx.fillRect(fxSel.x1*scale, fxSel.y1*scale, (fxSel.x2-fxSel.x1)*scale, (fxSel.y2-fxSel.y1)*scale);
+    octx.setLineDash([]);
+  }
+  if (!sel) return;
+  octx.strokeStyle = '#ff4444'; octx.lineWidth = 2; octx.setLineDash([7,5]);
+  if (sel.type === 'rect'){
+    octx.strokeRect(sel.x1*scale, sel.y1*scale, (sel.x2-sel.x1)*scale, (sel.y2-sel.y1)*scale);
+  } else {
+    octx.beginPath();
+    sel.points.forEach((p,i)=> i ? octx.lineTo(p[0]*scale, p[1]*scale)
+                                 : octx.moveTo(p[0]*scale, p[1]*scale));
+    octx.closePath(); octx.stroke();
+  }
+  octx.setLineDash([]);
+}
+function clearOv(){ octx.clearRect(0, 0, ov.width, ov.height); }
+function toggleFxPick(on){
+  fxPickOn = on;
+  document.getElementById('fxPickHint').style.display = on ? 'block' : 'none';
+  if (!on){ fxSel = null; drawSel(); log('特效位置圈选已关闭。'); }
+  else log('特效位置圈选已开: 在图上拖框(蓝)选择特效位置。');
+}
+function clearFxSel(){ fxSel = null; drawSel(); log('特效圈选已清除(将自动定位)。'); }
+
+// ---------- 鼠标圈选 (在 overlay 上, 不重绘底图) ----------
+const mode = () => document.querySelector('input[name=drawmode]:checked').value;
+ov.addEventListener('mousedown', e => {
+  const r = ov.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  if (mode() === 'rect') drag = {x, y};
+  else { freePts = [[x/scale, y/scale]]; }
+});
+ov.addEventListener('mousemove', e => {
+  const r = ov.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  if (mode() === 'rect' && drag){
+    clearOv();
+    octx.strokeStyle = '#ff4444'; octx.lineWidth = 2; octx.setLineDash([7,5]);
+    octx.strokeRect(drag.x, drag.y, x-drag.x, y-drag.y);
+    octx.setLineDash([]);
+  } else if (mode() === 'free' && freePts){
+    freePts.push([x/scale, y/scale]);
+    clearOv();
+    octx.strokeStyle = '#ff4444'; octx.lineWidth = 2;
+    octx.beginPath();
+    freePts.forEach((p,i)=> i ? octx.lineTo(p[0]*scale, p[1]*scale)
+                              : octx.moveTo(p[0]*scale, p[1]*scale));
+    octx.stroke();
+  }
+});
+ov.addEventListener('mouseup', e => {
+  const r = ov.getBoundingClientRect();
+  if (mode() === 'rect' && drag){
+    const x1 = (Math.min(drag.x, e.clientX-r.left))/scale, y1 = (Math.min(drag.y, e.clientY-r.top))/scale;
+    const x2 = (Math.max(drag.x, e.clientX-r.left))/scale, y2 = (Math.max(drag.y, e.clientY-r.top))/scale;
+    drag = null;
+    if (x2-x1 > 8 && y2-y1 > 8){
+      if (fxPickOn){   // 特效位置独立圈选: 存蓝框, 不动红色处理框
+        fxSel = {x1, y1, x2, y2};
+        log('特效位置已定: [' + (x1|0) + ',' + (y1|0) + ',' + (x2|0) + ',' + (y2|0) + '] 点「应用特效」即放这。');
+        drawSel();
+      } else {
+        sel = {type:'rect', x1, y1, x2, y2};
+        log('圈选(矩形): [' + (sel.x1|0) + ',' + (sel.y1|0) + ',' + (sel.x2|0) + ',' + (sel.y2|0) + ']');
+        drawSel();
+        placeConfirm();
+      }
+    } else { if (!fxPickOn){ sel = null; hideConfirm(); drawSel(); } }
+  } else if (mode() === 'free' && freePts){
+    freePts.push([(e.clientX-r.left)/scale, (e.clientY-r.top)/scale]);
+    if (freePts.length > 6){ sel = {type:'poly', points: freePts.map(p=>[Math.round(p[0]), Math.round(p[1])])};
+      log('圈选(自由笔, '+sel.points.length+' 点): 已记录。');
+      placeConfirm(); }
+    else { sel = null; log('自由笔轨迹太短, 请画大一点的圈。'); hideConfirm(); }
+    freePts = null;
+    drawSel();
+  }
+});
+function clearSel(){ sel = null; clearOv(); hideConfirm(); log('圈选已清除。'); }
+document.getElementById('confirmYes').onclick = () => {
+  hideConfirm();
+  const m = document.querySelector('input[name=selmode]:checked').value;
+  if (m === 'grabcut') doGrabcut();
+  else if (m === 'remove') doRemove();
+  else log('特效区域已确认, 点「添加特效」生效。');
+};
+document.getElementById('confirmNo').onclick = () => { hideConfirm(); clearSel(); };
+
+// ---------- API ----------
+async function api(path, body){
+  log('处理中…');
+  const r = await fetch(path, {method:'POST', headers:{'Content-Type':'application/json'},
+                               body: JSON.stringify(body)});
+  const j = await r.json();
+  if (j.error){ log('错误: ' + j.error); throw new Error(j.error); }
+  return j;
+}
+
+async function loadLists(){
+  const j = await fetch('/api/list').then(r=>r.json());
+  const fg = document.getElementById('fgList');
+  j.fgs.forEach(n=>{ const o=document.createElement('option'); o.value='data/ai_generated/green_fg/'+n; o.textContent=n; fg.appendChild(o); });
+  const bg = document.getElementById('bgList');
+  j.bgs.forEach(n=>{ const o=document.createElement('option'); o.value='data/ai_generated/studio_bg/'+n; o.textContent=n; bg.appendChild(o); });
+  fg.value = 'data/ai_generated/green_fg/' + j.fgs[0];
+  origPath = fg.value; alphaPath = null;
+  showPath(fg.value);
+  log('已加载预置素材。画框/画圈后选择用途, 或直接点自动抠图。');
+}
+document.getElementById('fgList').onchange = () => { origPath = document.getElementById('fgList').value; alphaPath = null; showPath(origPath); };
+document.getElementById('bgFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const b64 = await new Promise(res=>{ const rd=new FileReader();
+    rd.onload=()=>res(rd.result); rd.readAsDataURL(f); });
+  const j = await api('/api/upload', {data: b64, kind: 'bg'});
+  const bg = document.getElementById('bgList');
+  const o = document.createElement('option');
+  o.value = j.path; o.textContent = '[上传] ' + f.name;
+  bg.insertBefore(o, bg.firstChild); bg.value = j.path;
+  log('背景已上传: ' + f.name);
+};
+
+document.getElementById('file').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const b64 = await new Promise(res=>{ const rd=new FileReader();
+    rd.onload=()=>res(rd.result); rd.readAsDataURL(f); });
+  const j = await api('/api/upload', {data: b64});
+  origPath = j.path; alphaPath = null;
+  showPath(j.path);
+  log('已上传 ' + f.name + ' (' + j.w + 'x' + j.h + ')');
+};
+
+function selToBody(){
+  if (!sel) return null;
+  if (sel.type === 'rect')
+    return {type:'rect', xyxy:[sel.x1, sel.y1, sel.x2, sel.y2]};
+  return {type:'poly', points: sel.points};
+}
+
+async function doMatting(){
+  if (!origPath) return log('请先选择图片');
+  pushHist();
+  const j = await api('/api/matting', {image: origPath, engine: document.getElementById('engine').value});
+  alphaPath = j.alpha; showPath(j.vis);
+  log('抠图完成 (engine=' + j.engine + ', 前景 ' + Math.round(j.fg_ratio*100) + '%, ' + j.sec + 's)。切换背景会自动从绿幕原图重新叠加。');
+}
+async function doGrabcut(){
+  if (!origPath) return log('请先选择图片');
+  pushHist();
+  const s = selToBody();
+  if (!s) return log('请先画圈选, 并选中"GrabCut 抠图范围"');
+  const j = await api('/api/grabcut', {image: origPath, sel: s});
+  alphaPath = j.alpha; showPath(j.vis);
+  log('圈选 GrabCut 抠图完成 (前景 ' + Math.round(j.fg_ratio*100) + '%)。切换背景会自动从绿幕原图重新叠加。');
+}
+async function doRemove(){
+  if (!curPath) return log('请先选择图片');
+  const s = selToBody();
+  if (!s) return log('请先画框/画圈 (圈住要删掉的东西)');
+  pushHist();
+  const j = await api('/api/remove', {image: curPath, sel: s});
+  showPath(j.image_path);
+  log('已删除圈内内容, 洞口用原图背景丝滑填补 (' + j.sec + 's)。可继续圈选删除或加特效。');
+}
+async function doGreenscreen(){
+  if (!origPath) return log('请先选择图片');
+  pushHist();
+  // 每次绿幕替换都自动撤回到绿幕原图重新键控, 切换背景不叠加伪影
+  const j = await api('/api/greenscreen', {image: origPath, bg: document.getElementById('bgList').value});
+  showPath(j.image_path);
+  log('已自动撤回绿幕原图并重新替换 (' + Math.round(j.green_ratio*100) + '% 为新背景, 其余原图保留, ' + j.sec + 's)。可直接切换其它背景再点绿幕替换。');
+}
+async function doComposite(){
+  if (!origPath) return log('请先选择图片');
+  pushHist();
+  // 每次叠加都回到绿幕原图重新抠图/合成, 切换背景不会叠在上一次结果上
+  const j = await api('/api/composite', {
+    image: origPath, bg: document.getElementById('bgList').value,
+    alpha: alphaPath,
+    harmonize: document.getElementById('optHarm').checked,
+    relight: document.getElementById('optLight').checked,
+    shadow: document.getElementById('optShadow').checked});
+  showPath(j.final);
+  log('背景叠加完成 (' + j.total_ms + 'ms, 已从绿幕原图重新合成)。可直接切换其它背景再点叠加, 或继续添加特效。');
+}
+async function doFx(){
+  if (!curPath) return log('没有可加特效的图');
+  pushHist();
+  const smode = document.querySelector('input[name=selmode]:checked').value;
+  let region = null;
+  if (smode === 'fx'){
+    const s = selToBody();
+    if (!s) return log('特效区域模式需要先画框/画圈');
+    region = s.type === 'rect' ? {type:'box', xyxy: s.xyxy} : {type:'polygon', points: s.points};
+  }
+  const j = await api('/api/fx', {image: curPath, effect: document.getElementById('fxName').value,
+    intensity: parseFloat(document.getElementById('intensity').value), region});
+  showPath(j.image_path);
+  log('特效已添加 (' + (region ? '圈选区域' : '全图') + ')。');
+}
+// ===== 特效库面板: 分类目录 + 应用(自动定位/拉伸) =====
+let FX_CAT = {};
+let FX_SEL = null;
+async function loadFxCatalog(){
+  try {
+    const list = await fetch('/api/effects/catalog').then(r=>r.json());
+    FX_CAT = {};
+    list.forEach(e => { (FX_CAT[e.cat] = FX_CAT[e.cat] || []).push(e); });
+    // 渲染标签页
+    const tab = document.getElementById('fxTabs');
+    tab.innerHTML = '';
+    const order = ['滤镜','风格','光影','贴纸','水印','边框','道具','局部'];
+    const cats = Object.keys(FX_CAT).sort((a,b)=>(order.indexOf(a)-order.indexOf(b)));
+    cats.forEach(c => {
+      const btn = document.createElement('button');
+      btn.textContent = c; btn.style.width='auto'; btn.style.padding='4px 8px';
+      btn.style.fontSize='12px';
+      btn.onclick = () => renderFxGrid(c);
+      tab.appendChild(btn);
+    });
+    if (cats.length) renderFxGrid(cats[0]);
+  } catch(e){ console.warn('fx catalog fail', e); }
+}
+function renderFxGrid(cat){
+  const grid = document.getElementById('fxGrid');
+  grid.innerHTML = '';
+  (FX_CAT[cat]||[]).forEach(e => {
+    const cell = document.createElement('button');
+    cell.textContent = e.cn; cell.style.fontSize='12px'; cell.style.padding='7px 4px';
+    cell.style.whiteSpace='nowrap'; cell.style.overflow='hidden'; cell.style.textOverflow='ellipsis';
+    cell.style.background = FX_SEL===e.key ? '#1a73e8' : '';
+    cell.onclick = () => { FX_SEL=e.key; renderFxGrid(cat); log('已选特效: ' + e.cn + ' → 点「应用所选特效」'); };
+    grid.appendChild(cell);
+  });
+}
+async function applyAutoFx(){
+  if (!FX_SEL) return log('请先在特效库里选一个特效');
+  if (!curPath) return log('请先选择图片');
+  pushHist();
+  // 特效位置: 优先用独立特效圈选(fxSel蓝框), 其次旧"特效区域"框, 否则交给后端自动定位
+  let region = null;
+  if (fxSel){
+    region = {type:'box', xyxy:[fxSel.x1, fxSel.y1, fxSel.x2, fxSel.y2]};
+  } else if (document.querySelector('input[name=selmode]:checked').value === 'fx' && sel){
+    region = sel.type === 'rect' ? {type:'box', xyxy:[sel.x1, sel.y1, sel.x2, sel.y2]}
+                                  : {type:'polygon', points: sel.points};
+  }
+  const frac = parseFloat(document.getElementById('fxscale').value);
+  const j = await api('/api/effects/apply', {image: curPath, effect: FX_SEL, region,
+    params: {frac, intensity: frac}});
+  showPath(j.image_path);
+  log('特效 ' + FX_SEL + ' 已应用(' + (region ? '你圈选的位置' : (j.box ? '自动放置' : '全图')) + ')。可再叠加或撤销。');
+  // 应用后保留特效圈选, 便于微调
+  drawSel();
+}
+loadFxCatalog();
+function undo(){
+  if (!hist.length) return log('没有可撤销的步骤。');
+  const h = hist.pop();
+  alphaPath = h.alphaPath;
+  showPath(h.path);
+  log('已撤销一步。');
+}
+async function doSave(){
+  if (!curPath) return log('没有可保存的结果');
+  const j = await api('/api/save', {src: curPath});
+  log('已保存: ' + j.saved);
+}
+// ===== 视频处理 =====
+async function loadVideoPresets(){
+  try {
+    const list = await fetch('/api/list').then(r=>r.json());
+    const sel = document.getElementById('vidList');
+    sel.innerHTML = '<option value="">(选择预置视频)</option>';
+    // 把内嵌测试视频加入
+    const items = ['data/video/test_green.mp4', ...list.bgs.map(b => null).filter(Boolean)];
+    const r = await fetch('/api/list').then(r=>r.json());  // 用现成列表
+    // 从 /api/video 路径不存在 -> 直接给预置项
+    const presets = ['data/video/test_green.mp4'];
+    presets.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p; o.textContent = p.split('/').pop();
+      sel.appendChild(o);
+    });
+    // 背景列表(同 fx bgs)
+    const bg = document.getElementById('vidBgList');
+    bg.innerHTML = '';
+    list.bgs.forEach(b => {
+      const o = document.createElement('option');
+      o.value = 'data/ai_generated/studio_bg/' + b;
+      o.textContent = b; bg.appendChild(o);
+    });
+    sel.onchange = () => probeVideo(sel.value);
+    probeVideo(sel.value);
+  } catch(e){console.warn(e)}
+}
+async function probeVideo(path){
+  if (!path){ document.getElementById('vidInfo').textContent=''; return; }
+  try {
+    const r = await fetch('/api/video/probe?path=' + encodeURIComponent(path)).then(r=>r.json());
+    if (r.error){ document.getElementById('vidInfo').textContent = '加载失败: '+r.error; return; }
+    document.getElementById('vidInfo').textContent =
+      `已选: ${path.split('/').pop()}  |  ${r.width}x${r.height}  ${r.fps}fps  ${r.frames}帧  ${r.duration}s`;
+  } catch(e){
+    document.getElementById('vidInfo').textContent = '探测失败: '+e.message;
+  }
+}
+document.getElementById('vidFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  log('上传视频中…');
+  const b64 = await new Promise(res=>{const rd=new FileReader();
+    rd.onload=()=>res(rd.result); rd.readAsDataURL(f); });
+  const r = await api('/api/video/upload', {data: b64, name: f.name});
+  log('视频已上传: ' + r.path + ' (' + Math.round(r.size/1024) + ' KB)');
+  // 加入下拉
+  const sel = document.getElementById('vidList');
+  const o = document.createElement('option'); o.value = r.path; o.textContent = '[上传] ' + f.name;
+  sel.insertBefore(o, sel.firstChild); sel.value = r.path;
+  probeVideo(r.path);
+};
+async function doVideoProcess(){
+  const path = document.getElementById('vidList').value;
+  if (!path) return log('请先选择/上传视频');
+  const task = document.querySelector('input[name=vidTask]:checked').value;
+  const filter = document.getElementById('vidFilter').value;
+  const bg = document.getElementById('vidBgList').value;
+  let cfg = {};
+  if (task === 'replace_bg') cfg = {green:{enabled:true, bg:bg}};
+  else if (task === 'filter'){ if (filter) cfg = {filter: filter}; }
+  else if (task === 'mosaic') cfg = {mosaic:{enabled:true, box:[100,100,540,320], cell:24}};
+  else if (task === 'combo'){
+    cfg = {green:{enabled:true, bg:bg}};
+    if (filter) cfg.filter = filter;
+    cfg.fx = [{effect:'heart', params:{frac:0.12}}];
+    cfg.watermark = {text:'© 演播室视频合成', style:'diag', opacity:0.22, size:0.06};
+  }
+  const status = document.getElementById('vidStatus');
+  status.textContent = '处理中, 请稍候 (时长 ' + (await fetch('/api/video/probe?path='+encodeURIComponent(path)).then(r=>r.json()).catch(_=>({duration:'?'})).duration) + 's)…';
+  try {
+    const r = await api('/api/video/process', {input: path, cfg: cfg});
+    status.textContent = `处理完成: ${r.frames}帧, ${r.sec}s, 输出 ${r.output}`;
+    const url = '/file?path=' + encodeURIComponent(r.output);
+    const prev = document.getElementById('vidPreview');
+    prev.src = url; prev.style.display = 'block';
+    const dl = document.getElementById('vidDownload');
+    dl.href = url; dl.textContent = '⬇ 下载结果 (' + r.output + ')'; dl.style.display = 'block';
+    log('视频处理完成: ' + r.output);
+  } catch(e){
+    status.textContent = '处理失败: ' + e.message;
+  }
+}
+loadVideoPresets();
+loadLists();
+
+// ===== Agent v2 (Planner-DAG) =====
+function dagLog(who, html){
+  const box = document.getElementById('dagChat');
+  const color = who === '你' ? '#8ab4f8' : who === '系统' ? '#9aa0a6' : '#81c995';
+  box.innerHTML += `<div style="margin:6px 0"><b style="color:${color}">${who}:</b> ` +
+    `<span style="white-space:pre-wrap">${html}</span></div>`;
+  box.scrollTop = box.scrollHeight;
+}
+function dagNodeTable(steps, totalMs){
+  if (!steps || !steps.length) return '';
+  const icon = {done:'✅', failed:'❌', skipped:'⏭️', kept:'♻️', running:'⏳'};
+  let rows = steps.map(x => `<tr><td>${x.node_id}</td><td>${x.tool}</td>` +
+    `<td>${icon[x.status]||x.status} ${x.status}</td>` +
+    `<td>${x.latency_ms!=null ? x.latency_ms+'ms' : '-'}</td>` +
+    `<td style="color:#f28b82">${x.error||''}</td></tr>`).join('');
+  return `<table style="width:100%;font-size:12px;border-collapse:collapse;margin-top:4px">` +
+    `<tr style="color:#9aa0a6"><td>节点</td><td>工具</td><td>状态</td><td>延迟</td><td></td></tr>${rows}</table>` +
+    (totalMs!=null ? `<div class="hint">总耗时 ${totalMs}ms</div>` : '');
+}
+async function dagSend(){
+  const inp = document.getElementById('dagInput');
+  const v = inp.value.trim(); if (!v) return;
+  inp.value = '';
+  dagLog('你', v);
+  const st = document.getElementById('dagStatus');
+  st.textContent = 'Agent 执行中 (规划→工具→验证' +
+    (document.getElementById('dagCritic').checked ? '→Critic自评' : '') + ')…';
+  try {
+    const r = await api('/api/agent/dag', {instruction: v,
+      critic: document.getElementById('dagCritic').checked});
+    st.textContent = `完成 (${r.sec}s, ${r.plan_source || ''})`;
+    if (r.abstain){ dagLog('Agent', `🚫 拒识: ${r.abstain}`); return; }
+    let h = dagNodeTable(r.steps, r.total_ms);
+    if (r.critic) h += `<div class="hint">Critic: ${JSON.stringify(r.critic)}` +
+      (r.critic_fix ? ` | 修正: ${r.critic_fix}` : '') + `</div>`;
+    if (r.utility) h += `<div class="hint">效用 U=${r.utility.U} (质量${r.utility.quality_term}/延迟${r.utility.latency_term}/成本${r.utility.cost_term})</div>`;
+    if (r.final_text) h += `<div style="margin-top:4px">${r.final_text}</div>`;
+    dagLog('Agent', h || '(无输出)');
+    if (r.cur_url){
+      document.getElementById('dagPreview').innerHTML =
+        `<a href="${r.cur_url}" target="_blank">打开成片</a><br>` +
+        `<img src="${r.cur_url}" style="width:100%;border-radius:4px;margin-top:4px">`;
+      curPath = r.final; origPath = r.final; showPath(r.final);
+    }
+  } catch(e){ st.textContent = '失败: ' + (e.message||e); dagLog('系统', '❌ ' + (e.message||e)); }
+}
+async function dagRollback(){
+  const bg = document.getElementById('dagRollbackBg').value.trim();
+  if (!bg) return log('请输入要回滚到的背景语义 (如 访谈/综艺)');
+  dagLog('你', `↩ 回滚背景到「${bg}」(保留光照)`);
+  const st = document.getElementById('dagStatus');
+  st.textContent = '条件回滚中…';
+  try {
+    const r = await api('/api/agent/dag', {rollback: bg, critic: false});
+    st.textContent = '回滚完成';
+    let h = `<div class="hint">重跑: ${(r.steps||[]).filter(x=>x.status==='done').map(x=>x.node_id).join(',')||'-'} | ` +
+      `缓存复用: ${(r.steps||[]).filter(x=>x.status==='kept').map(x=>x.node_id).join(',')||'-'}</div>`;
+    if (r.final_text) h += `<div>${r.final_text}</div>`;
+    dagLog('Agent', h);
+    if (r.cur_url){
+      document.getElementById('dagPreview').innerHTML =
+        `<img src="${r.cur_url}" style="width:100%;border-radius:4px">`;
+      curPath = r.final; origPath = r.final; showPath(r.final);
+    }
+  } catch(e){ st.textContent = '失败: ' + (e.message||e); }
+}
+async function dagReset(){
+  await api('/api/agent/dag', {reset: true});
+  document.getElementById('dagChat').innerHTML = '';
+  document.getElementById('dagPreview').innerHTML = '';
+  document.getElementById('dagStatus').textContent = '已清空会话';
+}
+
+// ===== AI Agent =====
+async function agentChat(){
+  const inp = document.getElementById('agentInput');
+  const v = inp.value.trim();
+  if (!v) return;
+  const status = document.getElementById('agentStatus');
+  status.textContent = '规划中… (可能耗时 5-30 秒, 包含 LLM 思考与工具执行)';
+  try {
+    const r = await api('/api/agent/chat', {
+      instruction: v,
+      critic: document.getElementById('agentCritic').checked,
+    });
+    status.textContent = `完成: ${r.n_steps} 工具 / ${r.n_iter} 轮 LLM / ${r.sec}s`;
+    document.getElementById('agentPlan').textContent = r.plan || '(无)';
+    document.getElementById('agentFinal').textContent = r.final_text || '';
+    document.getElementById('agentCriticOut').textContent = r.critic ? '[Critic]\n' + r.critic : '';
+    // 工具明细
+    const stp = (r.steps || []).map((s,i)=>
+      `${i+1}. ${s.tool}(${JSON.stringify(s.args)}) ${s.sec}s`).join('\n');
+    document.getElementById('agentSteps').textContent = stp || '(无)';
+    // 当前成片显示
+    const out = document.getElementById('agentCur');
+    if (r.cur_url){
+      out.innerHTML = `成片: <a href="${r.cur_url}" target="_blank">打开</a><br>
+        <img src="${r.cur_url}" style="width:100%;border-radius:4px;margin-top:4px">`;
+      curPath = r.cur;   // 后续图片操作可以基于此
+      origPath = r.cur;   // 让叠加/特效可在此基础上
+      showPath(r.cur);
+    } else {
+      out.textContent = '';
+    }
+  } catch(e){
+    status.textContent = '失败: ' + (e.message || e);
+  }
+}
+async function agentReset(){
+  await api('/api/agent/chat', {reset: true});
+  document.getElementById('agentStatus').textContent = '已清空';
+  document.getElementById('agentPlan').textContent = '';
+  document.getElementById('agentFinal').textContent = '';
+  document.getElementById('agentSteps').textContent = '';
+  document.getElementById('agentCriticOut').textContent = '';
+  document.getElementById('agentCur').innerHTML = '';
+}
+</script>
+</body>
+</html>

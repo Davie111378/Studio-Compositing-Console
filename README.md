@@ -179,3 +179,22 @@ app\start_agent.bat
 3. **B6 主观评分**：需团队 ≥10 人双盲填表（评分模板已生成）。
 4. **B7 LoRA**：4GB 显存不可行，已降级为"接口预留 + 文档说明"，待 8GB+ 机器重启。
 5. **Baseline@1024**：当前 baseline 是 BiRefNet@512（节省时间、与 refined 公平对比），可在 09-15 后用 1024 重做更严格 baseline。
+
+## 权重与密钥（本地放置，不入库）
+
+本仓库**不含**大模型权重与密钥文件（已在 `.gitignore` 排除，且 GitHub 单文件上限 100MB、仓库不适合放大文件）：
+
+| 类别 | 本地应放置路径 | 说明 |
+|---|---|---|
+| BiRefNet 权重 | `ai-service/src/matting/birefnet_official/model.safetensors` | 抠图主干，约 444MB |
+| Refiner 权重 | `training/checkpoints/refiner_real_v4/best.pt` 等 | AlphaRefiner 精修（生效版本见 `training/checkpoints/active_refiner.txt`）|
+| MODNet 权重 | `third_party/HumanMatting/onnx/modnet_hrnet_w18.onnx` | ONNX 抠图引擎 |
+| LaMa 权重 | `third_party/LaMa/onnx/lama_fp32.onnx` | 消除 / 修复引擎 |
+| Qwen 模型 | `agent_training/models/qwen2.5-0.5b-instruct/` | Agent SFT 训练 / 推理 |
+
+获取方式：
+1. 权重从团队内部网盘 / hf-mirror 拉取后放到上述路径即可运行；
+2. 配置：复制 `.env.example` 为 `.env`，填入你自己的 `AGNES_API_KEY` / `QWEN_API_KEY`。
+
+> ⚠️ **安全提醒**：本项目早期某次提交曾把真实 `.env`（含 agnes / qwen 的 `sk-...` 密钥）推上 GitHub 历史，密钥已暴露。
+> 请**立即去对应平台吊销并重新生成**相关 API Key——仅删除文件无法清除 Git 历史中的密钥。

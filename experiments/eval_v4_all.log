@@ -1,0 +1,19 @@
+[infer-size] 384 (训练尺寸, 取自 refiner_real_v4/config.json)
+[coarse ] SAD=16876.77 MSE=0.005795 Grad=1554.17 Conn=0.0768 | hm: SAD=6436.55 Grad=110.21 Conn=0.1056 | p3m_np: SAD=10570.48 Grad=1701.77 Conn=0.0402 | p3m_p: SAD=24018.29 Grad=1522.10 Conn=0.1112
+[v4    ] SAD=15577.49 MSE=0.005930 Grad=1655.94 Conn=0.0803 | hm: SAD=5524.12 Grad=88.07 Conn=0.0985 | p3m_np: SAD=9232.88 Grad=1818.76 Conn=0.0444 | p3m_p: SAD=22726.37 Grad=1618.54 Conn=0.1148
+[gate] SAD drop=7.7% Grad_ok=False Conn_ok=False -> CHECK
+[studio-regression] n=24 refiner_studio L1=1.218% v4 L1=1.239% (+1.8%)
+--- FAIR ---
+coarse@512(原始)           SAD=  16876.8 MSE=0.00580 Grad=  1554.2 Conn=0.0768
+coarse@384往返             SAD=  18272.6 MSE=0.00594 Grad=  1676.1 Conn=0.0828
+preds_v4_384@384         SAD=  15577.5 MSE=0.00593 Grad=  1655.9 Conn=0.0803
+
+refined vs coarse@512  : SAD -7.7%  Grad +6.5%  Conn +4.5%
+refined vs coarse@384rt : SAD -14.7%  Grad -1.2%  Conn -3.0%
+--- STUDIO REG (n=120) ---
+[studio-regression] n=120 size=384
+  refiner_studio         L1 mean= 1.495%  median= 1.369%  p90= 2.297%   (coarse 基线 5.334%)
+  refiner_real_v3        L1 mean= 1.738%  median= 1.531%  p90= 2.751%   (coarse 基线 5.334%)
+  refiner_real_v4        L1 mean= 1.588%  median= 1.423%  p90= 2.430%   (coarse 基线 5.334%)
+  refiner_real_v3 vs refiner_studio: 均值+16.2%  劣化张数=82/120  严重劣化(>20%)=18
+  refiner_real_v4 vs refiner_studio: 均值+6.2%  劣化张数=32/120  严重劣化(>20%)=8

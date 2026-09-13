@@ -1,0 +1,28 @@
+{
+  "led_studio": {
+    "full": "D:\\AIcode\\生产实习\\experiments\\studio\\single_image_test\\comp_led_studio_full\\final.png",
+    "raw": "D:\\AIcode\\生产实习\\experiments\\studio\\single_image_test\\comp_led_studio_raw\\final.png",
+    "t_full_s": 4.4,
+    "t_raw_s": 1.3,
+    "stages_full": {
+      "T03_matting": 279,
+      "T06_harmonize": 1371,
+      "T04_relight": 1132,
+      "T05_shadow": 687,
+      "T07_composite": 897
+    }
+  },
+  "city_sunset": {
+    "full": "D:\\AIcode\\生产实习\\experiments\\studio\\single_image_test\\comp_city_sunset_full\\final.png",
+    "raw": "D:\\AIcode\\生产实习\\experiments\\studio\\single_image_test\\comp_city_sunset_raw\\final.png",
+    "t_full_s": 3.6,
+    "t_raw_s": 0.9,
+    "stages_full": {
+      "T03_matting": 286,
+      "T06_harmonize": 1060,
+      "T04_relight": 920,
+      "T05_shadow": 743,
+      "T07_composite": 624
+    }
+  }
+}

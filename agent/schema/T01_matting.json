@@ -1,0 +1,116 @@
+{
+  "id": "T01",
+  "name": "matting",
+  "version": "1.1",
+  "b_mapping": "ai-service/src/matting/matting_backend.build_matting_tool().predict(); interactive_matting.InteractiveMatting.matte(box/points); refiner=agent/adapter.refiner_weight() 统一注册位 (env REFINER_WEIGHT > training/checkpoints/active_refiner.txt > refiner_studio), 当前 T01 fine 档权重由 active_refiner.txt 决定",
+  "desc": "抠图: 分离前景与背景, 输出 alpha 与白底预乘 fg (img*a+255*(1-a))。keep=subject 默认(保留主体/人物); keep=background 时反转 alpha(删除主体, 保留背景), 用于'扣去/去掉图中人物'类指令",
+  "quality_tiers": {
+    "draft": "seg512, refine=false",
+    "normal": "seg512, refine=false",
+    "fine": "seg512, refine=true (AlphaRefiner 精修)"
+  },
+  "input": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "image": {
+        "type": "string",
+        "description": "输入图路径 (项目相对或绝对)"
+      },
+      "mode": {
+        "type": "string",
+        "enum": [
+          "auto",
+          "interactive"
+        ],
+        "description": "auto=整图自动; interactive=需 box/points/polygon"
+      },
+      "engine": {
+        "type": "string",
+        "enum": [
+          "humanmatting",
+          "humanmatting_fast"
+        ],
+        "description": "抠图引擎 (可选, 默认 BiRefNet)。humanmatting=MODNet-HRNetW18 语义人像抠图(精度, ~0.3s); humanmatting_fast=MODNet-MobileNetV2(更快, ~0.15s)。适合非绿幕通用人像; 用户点名 MODNet/humanmatting/人像语义抠图时使用"
+      },
+      "keep": {
+        "type": "string",
+        "enum": [
+          "subject",
+          "background"
+        ],
+        "default": "subject",
+        "description": "保留哪一侧: subject=保留主体/人物(默认, 抠出人物); background=删除主体只留背景(扣去人物/去掉人物/移除人物)"
+      },
+      "box": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        },
+        "minItems": 4,
+        "maxItems": 4
+      },
+      "points": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "quality": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "normal",
+          "fine"
+        ],
+        "default": "draft"
+      }
+    },
+    "required": [
+      "image"
+    ]
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "alpha_path": {
+        "type": "string"
+      },
+      "fg_path": {
+        "type": "string"
+      },
+      "fg_ratio": {
+        "type": "number"
+      }
+    },
+    "required": [
+      "alpha_path",
+      "fg_path"
+    ]
+  },
+  "errors": [
+    {
+      "code": "E_INPUT_MISSING",
+      "message": "输入图不存在",
+      "retryable": false
+    },
+    {
+      "code": "E_MATTING_FAIL",
+      "message": "抠图推理失败(显存/权重)",
+      "retryable": true
+    },
+    {
+      "code": "E_MODE_CONFLICT",
+      "message": "interactive 模式缺 box/points",
+      "retryable": false
+    }
+  ],
+  "latency_budget_ms": {
+    "draft": 1500,
+    "fine": 3500
+  }
+}
