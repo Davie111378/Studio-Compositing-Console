@@ -1,0 +1,44 @@
+{
+  "id": "T01",
+  "tool": "matting",
+  "version": "1.0",
+  "title": "前景抠取",
+  "description": "输入 RGB 图像，输出高精度 alpha（支持透明/半透明：玻璃、薄纱、发丝）。可选点/框提示走 SAM2 交互分割 -> trimap -> BiRefNet 细化；auto 模式直接 BiRefNet。",
+  "owner": "接口=A / 实现=B（BiRefNet + SAM2）",
+  "deps_models": ["BiRefNet", "SAM2"],
+  "input": {
+    "type": "object",
+    "required": ["image"],
+    "properties": {
+      "image": { "type": "string", "description": "上传资产或上游产物 URI：asset:// 或 artifact://" },
+      "mode": { "type": "string", "enum": ["auto", "trimap"], "default": "auto", "description": "auto=无引导；trimap=配合 point/box/trimap 引导" },
+      "point": { "type": "object", "description": "SAM2 点提示（图像素坐标）", "properties": { "x": { "type": "integer" }, "y": { "type": "integer" } }, "required": ["x", "y"] },
+      "box": { "type": "array", "items": { "type": "integer" }, "minItems": 4, "maxItems": 4, "description": "SAM2 框提示 [x1,y1,x2,y2]" },
+      "trimap": { "type": "string", "description": "外部 trimap URI（可选）" }
+    }
+  },
+  "options": {
+    "type": "object",
+    "properties": {
+      "quality": { "type": "string", "enum": ["draft", "normal", "fine"], "default": "normal", "description": "draft=低分辨率快速档（草稿级出图）" }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["rgba_png", "alpha_png", "mask_png"],
+    "properties": {
+      "rgba_png": { "type": "string", "description": "带 alpha 通道的前景 RGBA 图 URI" },
+      "alpha_png": { "type": "string", "description": "单通道 alpha 灰度图 URI（0-255）" },
+      "mask_png": { "type": "string", "description": "二值化 mask URI" }
+    }
+  },
+  "errors": [
+    { "code": "E_MATTING_OOM", "message": "显存不足", "retryable": true },
+    { "code": "E_MATTING_TIMEOUT", "message": "推理超时", "retryable": true },
+    { "code": "E_MATTING_NO_FG", "message": "未检测到有效前景", "retryable": false },
+    { "code": "E_MATTING_WEIGHT_MISSING", "message": "权重缺失/加载失败（L3 应回落 Base Model）", "retryable": false },
+    { "code": "E_INVALID_INPUT", "message": "输入缺失或 URI 无法解析", "retryable": false }
+  ],
+  "latency": { "p50_ms": 1200, "p95_ms": 3500, "timeout_ms": 15000 },
+  "notes": "精度档位映射：draft=BiRefNet-small/512、normal=BiRefNet/1024、fine=BiRefNet/1024+CRF 细化。Critic Edge 维度不达标时提高档位重跑。"
+}

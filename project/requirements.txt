@@ -1,0 +1,17 @@
+# 核心依赖（锁版本见 docs/env.md，P2 冻结后更新）
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+httpx>=0.27
+pillow>=10.2
+python-multipart>=0.0.9
+pytest>=8.0
+numpy>=1.26
+opencv-python>=4.9   # B 组算法引擎（bsrc/）依赖；缺失时 ai-service 自动回落 mock 引擎
+rembg>=0.1.6         # T01 离线神经网络抠图（onnxruntime）；首次使用会下载 REMBG_MODEL 权重
+onnxruntime>=1.17
+
+# ---- 以下为后续接入真实模型时按需安装（B 组/C 组自行添加）----
+# torch / torchvision          # BiRefNet, SAM2 推理（就绪后设 BIREFNET_WEIGHT_PATH 自动启用真实抠图链）
+# diffusers / transformers     # SDXL / IC-Light
+# openai-whisper / funasr      # 本地 ASR

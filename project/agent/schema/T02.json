@@ -1,0 +1,42 @@
+{
+  "id": "T02",
+  "tool": "background_generate",
+  "version": "1.0",
+  "title": "背景生成",
+  "description": "按 prompt（+可选参考图）生成与前景对齐的背景，必须同步产出深度图供 T03/T05/T07 使用（规范 5.2）。SDXL/FLUX + ControlNet(depth/edge)，参考图驱动走 Paint-by-Example。",
+  "owner": "接口=A / 实现=B（Diffusion）",
+  "deps_models": ["SDXL/FLUX", "ControlNet"],
+  "input": {
+    "type": "object",
+    "required": ["prompt"],
+    "properties": {
+      "prompt": { "type": "string", "description": "场景描述，如：傍晚的咖啡馆，光从左边照过来" },
+      "ref_image": { "type": "string", "description": "风格/内容参考图 URI（可选）" },
+      "size": { "type": "object", "properties": { "width": { "type": "integer" }, "height": { "type": "integer" } }, "description": "默认 1024x1024；须与前景合成视角对齐" },
+      "style": { "type": "string", "description": "风格标签，如 photo/cinematic/anime" }
+    }
+  },
+  "options": {
+    "type": "object",
+    "properties": {
+      "quality": { "type": "string", "enum": ["draft", "normal", "fine"], "default": "normal", "description": "draft=低步数低分辨率（草稿级 ≤10s 出图约束）" }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["bg_png", "depth_png"],
+    "properties": {
+      "bg_png": { "type": "string", "description": "背景图 URI" },
+      "depth_png": { "type": "string", "description": "深度图 URI（供 T03/T05/T07）" }
+    }
+  },
+  "errors": [
+    { "code": "E_BG_GEN_OOM", "message": "显存不足", "retryable": true },
+    { "code": "E_BG_GEN_TIMEOUT", "message": "生成超时", "retryable": true },
+    { "code": "E_BG_GEN_UNSAFE", "message": "prompt 触发安全策略", "retryable": false },
+    { "code": "E_BG_GEN_WEIGHT_MISSING", "message": "权重缺失（L3 回落）", "retryable": false },
+    { "code": "E_INVALID_INPUT", "message": "输入缺失", "retryable": false }
+  ],
+  "latency": { "p50_ms": 4000, "p95_ms": 9000, "timeout_ms": 60000 },
+  "notes": "步数映射：draft=12 步/512、normal=24 步/1024、fine=36 步/1024。"
+}

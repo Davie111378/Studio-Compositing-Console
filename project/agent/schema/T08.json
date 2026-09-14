@@ -1,0 +1,34 @@
+{
+  "id": "T08",
+  "tool": "export",
+  "version": "1.0",
+  "title": "最终输出",
+  "description": "结果导出：格式/尺寸转换，附带元数据。多尺寸导出由前端多次调用实现（C7）。",
+  "owner": "接口=A / 实现=A（纯 IO，无模型）",
+  "deps_models": [],
+  "input": {
+    "type": "object",
+    "required": ["image"],
+    "properties": {
+      "image": { "type": "string", "description": "最终图 URI" },
+      "format": { "type": "string", "enum": ["png", "jpg"], "default": "png" },
+      "size": { "type": "object", "properties": { "width": { "type": "integer" }, "height": { "type": "integer" } } },
+      "metadata": { "type": "object", "description": "写入产物元信息：plan_id/prompt/critic 分数等" }
+    }
+  },
+  "options": { "type": "object", "properties": {} },
+  "output": {
+    "type": "object",
+    "required": ["file_url", "meta"],
+    "properties": {
+      "file_url": { "type": "string", "description": "可下载产物 URI" },
+      "meta": { "type": "object", "properties": { "width": { "type": "integer" }, "height": { "type": "integer" }, "format": { "type": "string" }, "bytes": { "type": "integer" } } }
+    }
+  },
+  "errors": [
+    { "code": "E_EXPORT_FAILED", "message": "导出失败（编码/写盘）", "retryable": true },
+    { "code": "E_INVALID_INPUT", "message": "输入缺失或 URI 无法解析", "retryable": false }
+  ],
+  "latency": { "p50_ms": 200, "p95_ms": 800, "timeout_ms": 5000 },
+  "notes": "产物命名遵循规范 N7：<task_id>_<node_id>_<version>.png。"
+}

@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="rnZb8cCKLSpgiXx4KqY6H7">
+<head data-page-node-id="QmNtRNzFXEDRe8soX9GawD">
+<meta charset="UTF-8" data-page-node-id="YfwDiT6E5EZ26fs6oL8Cnc">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="XkA3UVSePuK2Jq8r9wtE3O">
+<title>多模态图像合成 Agent 项目总规范 V1.0</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --panel: #ffffff;
+    --ink: #1f2328;
+    --ink-2: #4a5158;
+    --ink-3: #767e86;
+    --line: #e3e6ea;
+    --accent: #2563eb;
+    --accent-soft: #eaf1ff;
+    --warn: #b45309;
+    --warn-soft: #fff7ed;
+    --ok: #15803d;
+    --ok-soft: #f0fdf4;
+    --danger: #b91c1c;
+    --danger-soft: #fef2f2;
+    --code-bg: #f4f5f7;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-size: 15px;
+    line-height: 1.75;
+  }
+  .layout { display: flex; align-items: flex-start; }
+
+  /* 侧边栏 */
+  aside {
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    width: 300px; flex: 0 0 300px;
+    background: var(--panel); border-right: 1px solid var(--line);
+    padding: 20px 14px 60px;
+  }
+  aside .brand { font-weight: 700; font-size: 15px; padding: 4px 10px 14px;
+    border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+  aside .brand span { display:block; font-weight:400; font-size:12px; color:var(--ink-3); margin-top:4px; }
+  aside .toc ul { list-style: none; margin: 0; padding-left: 0; }
+  aside .toc > ul > li > ul { padding-left: 12px; }
+  aside .toc li { margin: 1px 0; }
+  aside .toc a {
+    display: block; padding: 5px 10px; border-radius: 6px;
+    color: var(--ink-2); text-decoration: none; font-size: 13px;
+    line-height: 1.5; border-left: 2px solid transparent;
+  }
+  aside .toc > ul > li > a { font-weight: 600; color: var(--ink); font-size: 13.5px; }
+  aside .toc a:hover { background: var(--accent-soft); color: var(--accent); }
+  aside .toc a.active { background: var(--accent-soft); color: var(--accent); border-left-color: var(--accent); }
+
+  /* 主体 */
+  main { flex: 1 1 auto; min-width: 0; padding: 36px 48px 120px; }
+  .paper { max-width: 980px; margin: 0 auto; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 12px; padding: 44px 52px 64px; }
+
+  h1 { font-size: 27px; line-height: 1.4; margin: 8px 0 18px; padding-bottom: 14px;
+    border-bottom: 2px solid var(--line); }
+  h2 { font-size: 21px; margin: 44px 0 14px; padding: 8px 0 8px 12px;
+    border-left: 4px solid var(--accent); background: var(--accent-soft);
+    border-radius: 0 6px 6px 0; }
+  h3 { font-size: 17px; margin: 30px 0 10px; color: var(--ink); }
+  h4 { font-size: 15px; margin: 22px 0 8px; color: var(--ink-2); }
+  p { margin: 10px 0; color: var(--ink-2); }
+  strong { color: var(--ink); }
+  a { color: var(--accent); }
+  ul, ol { padding-left: 24px; color: var(--ink-2); }
+  li { margin: 4px 0; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 36px 0; }
+
+  blockquote {
+    margin: 16px 0; padding: 12px 16px; background: var(--warn-soft);
+    border-left: 4px solid #f59e0b; border-radius: 0 6px 6px 0; color: var(--ink-2);
+  }
+  blockquote p { margin: 4px 0; }
+
+  code {
+    background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
+    font-size: 13px; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    color: #b4265a;
+  }
+  pre {
+    background: #fbfcfd; border: 1px solid var(--line); border-radius: 8px;
+    padding: 16px 18px; overflow-x: auto; margin: 16px 0;
+  }
+  pre code { background: none; padding: 0; color: var(--ink); font-size: 12.5px; line-height: 1.6; }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px;
+    display: block; overflow-x: auto; white-space: nowrap;
+  }
+  thead th {
+    background: #f1f3f5; color: var(--ink); text-align: left;
+    padding: 9px 12px; border: 1px solid var(--line); font-weight: 600;
+  }
+  tbody td { padding: 8px 12px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+  tbody tr:nth-child(even) { background: #fcfcfd; }
+  tbody td strong { color: var(--danger); }
+
+  .task-item { list-style: none; margin-left: -22px; }
+  .task-item input { margin-right: 6px; }
+
+  /* 顶部工具条 */
+  .topbar {
+    position: sticky; top: 0; z-index: 5; background: rgba(247,248,250,.92);
+    backdrop-filter: blur(6px); border-bottom: 1px solid var(--line);
+    padding: 8px 24px; display: flex; gap: 10px; align-items: center; justify-content: flex-end;
+  }
+  .topbar button {
+    border: 1px solid var(--line); background: var(--panel); color: var(--ink-2);
+    padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12.5px;
+  }
+  .topbar button:hover { border-color: var(--accent); color: var(--accent); }
+  #menuBtn { display: none; }
+
+  @media (max-width: 1000px) {
+    aside { position: fixed; left: -320px; z-index: 20; transition: left .2s; box-shadow: 0 0 24px rgba(0,0,0,.12); }
+    aside.open { left: 0; }
+    main { padding: 20px 16px 80px; }
+    .paper { padding: 24px 18px 48px; }
+    #menuBtn { display: inline-block; }
+    .topbar { justify-content: space-between; }
+  }
+  @media print {
+    aside, .topbar { display: none; }
+    main { padding: 0; }
+    .paper { border: none; max-width: none; }
+    body { background: #fff; }
+    h2 { break-after: avoid; }
+    table, pre { break-inside: avoid; }
+  }
+</style>
+</head>
+<body data-page-node-id="8Gc5cxBa7C9ybsUu6yoaHA">
+<div class="topbar" data-page-node-id="GOhGZhh9VegTKE5TjZXcdC">
+  <button id="menuBtn" data-page-node-id="rf6GxePXGiUSgUvhDMz7Qb">目录</button>
+  <span style="flex:1" data-page-node-id="kzCFPtbQw3TBvbjtfu1Pts"></span>
+  <button onclick="window.print()" data-page-node-id="lEUy417wI6YEoJUaoGH7Gn">打印 / 存 PDF</button>
+  <button id="topBtn" data-page-node-id="Dn0xFEyUo13GUGRWJOTulU">回到顶部</button>
+</div>
+<div class="layout" data-page-node-id="kblGE9IW6qhsd8kojJpmyf">
+  <aside id="side" data-page-node-id="MyMIrgOnFW060rXz0rHtDY">
+    <div class="brand" data-page-node-id="Ig4M5GEVQv6b1jFqLbMkFM">多模态图像合成 Agent<span data-page-node-id="B9pco2zfxvCJwRMwEJMZ7Q">项目总规范 V1.0 · 2026-09-08 → 10-10</span></div>
+    <nav class="toc" data-page-node-id="rHBkZBoJUFuJ6heRxQGL8v"><div class="toc" data-page-node-id="TgTeCzeGb0fn8trkhVDGoW">
+<ul data-page-node-id="u6Fwvh8WSOtRmEFMvDAVpN">
+<li data-page-node-id="PDWjloSfLCeArWzaPqEYO2"><a href="#sec-多模态图像合成-Agent-项目总规范-V1-0" data-page-node-id="YQJAgdwx28DpU3y6O0AxH8">多模态图像合成 Agent 项目总规范 V1.0</a><ul data-page-node-id="Gt5kAxCidh1BY0WvPFBGGc">
+<li data-page-node-id="fzXZH2u1laCrIw3BSE7z8w"><a href="#sec-0-如何使用本文档" data-page-node-id="eTGtG7PpaBRBdcx8AwHqcB">0. 如何使用本文档</a></li>
+</ul>
+</li>
+<li data-page-node-id="0ZrOruUN9YFLr3PUPSqe8j"><a href="#sec-一-总体规范与标准" data-page-node-id="UpdMb1rBkUvrZcOaiOtDYU">一、总体规范与标准</a><ul data-page-node-id="OXXbPUjeNrRHsapLfPzXxE">
+<li data-page-node-id="cTlgeLcC3EzHXRfH4bf22I"><a href="#sec-1-1-项目定义" data-page-node-id="QaK85uxNl71hP9pB99qhwM">1.1 项目定义</a></li>
+<li data-page-node-id="fiMDdAoxQ6FqUCBo7BFkVy"><a href="#sec-1-2-开发规范-8-条-强制执行" data-page-node-id="skqxAXGZfmvqC4Zit770Ai">1.2 开发规范（8 条，强制执行）</a><ul data-page-node-id="JmKa23JOdH9lsvPlCmI6RH">
+<li data-page-node-id="e7VTj31uFHAMXDhvSqfaea"><a href="#sec-N1-接口先行" data-page-node-id="N8BqGzctqnEACaVLdRkwtI">N1 接口先行</a></li>
+<li data-page-node-id="tX7KR9KfyZUJKsDc1Of2Sn"><a href="#sec-N2-模型与-Agent-解耦" data-page-node-id="PJNqbq2haemPYgNExVHu1R">N2 模型与 Agent 解耦</a></li>
+<li data-page-node-id="9QIEg4Eald0NfH2tiFTsHC"><a href="#sec-N3-训练与主线解耦" data-page-node-id="97vEtELUE94GsAoT7BOsRo">N3 训练与主线解耦</a></li>
+<li data-page-node-id="CyU94AXbnpQDA61uqRBB20"><a href="#sec-N4-所有训练必须可恢复" data-page-node-id="7kQ351yCpfe47BEfx5cAJF">N4 所有训练必须可恢复</a></li>
+<li data-page-node-id="CfAluMUPrWyQHyxk8wOvoZ"><a href="#sec-N5-实验可复现" data-page-node-id="kUCK2bffwvvloETyHMLx8x">N5 实验可复现</a></li>
+<li data-page-node-id="CvAIU6HCnvNsn1xYCgQpMA"><a href="#sec-N6-代码与分支规范" data-page-node-id="VC7p3dEsC3eQNz62t5V6IF">N6 代码与分支规范</a></li>
+<li data-page-node-id="GqbeD2TOsfasHyAaY6Evft"><a href="#sec-N7-目录与命名规范" data-page-node-id="xoFo7VsiPAF7uRZW5yH5PV">N7 目录与命名规范</a></li>
+<li data-page-node-id="kvfAJRa8BAupIfNI4cMacr"><a href="#sec-N8-文档与交付规范" data-page-node-id="qD3av7tqa6pX09cW9OQTkq">N8 文档与交付规范</a></li>
+</ul>
+</li>
+<li data-page-node-id="JdF3m0CrdH3DPNu930BETY"><a href="#sec-1-3-研究与实验规范" data-page-node-id="jLVHCTHPVrEU9dOYP9kWMl">1.3 研究与实验规范</a><ul data-page-node-id="Z5VMsZMR6a9qOshB6cUVu1">
+<li data-page-node-id="9O75H4cTE62Kk4XD8ZdINO"><a href="#sec-E1-数据集划分" data-page-node-id="0RCRWlg27k6GkQEWGsmnxq">E1 数据集划分</a></li>
+<li data-page-node-id="n8MDBtnvjSWS7Br5Y9UbJh"><a href="#sec-E2-基线必须先行" data-page-node-id="3uoqXPcHOIwcRr4TAKmeaO">E2 基线必须先行</a></li>
+<li data-page-node-id="2HlnuqQjarHAqzG456eKHT"><a href="#sec-E3-指标口径统一" data-page-node-id="tBHcghsdqXwXKkEvS2IZLv">E3 指标口径统一</a></li>
+<li data-page-node-id="wcaVcEcN1MuKa9vSwCVefr"><a href="#sec-E4-失败案例必须留档" data-page-node-id="GFGobxw9FrHBzFDFXT1314">E4 失败案例必须留档</a></li>
+</ul>
+</li>
+<li data-page-node-id="UvVWAOAKShwKlSvGRtHss3"><a href="#sec-1-4-租卡与算力规范" data-page-node-id="4rYD25irg4zs3DbkrCSoJo">1.4 租卡与算力规范</a></li>
+<li data-page-node-id="fbxSNJVPaCNWWj4mMxBTJZ"><a href="#sec-1-5-例会与节点机制" data-page-node-id="jaAzZPhT7zB2iLxqmBqszz">1.5 例会与节点机制</a></li>
+</ul>
+</li>
+<li data-page-node-id="fEETLF3q7mWt8iWKjiPCrF"><a href="#sec-二-预期达成效果与成果指标" data-page-node-id="CGyKNS9M76rogFJYEOTcLf">二、预期达成效果与成果指标</a><ul data-page-node-id="6Ef33K5l3MioVzpSIRoJLA">
+<li data-page-node-id="g0wa25WDbGm0XwRHZ2LP6B"><a href="#sec-2-1-最终系统形态-用户视角" data-page-node-id="dRiFEQ7mgngjwGSnXuFGVk">2.1 最终系统形态（用户视角）</a></li>
+<li data-page-node-id="VUU8PLdaHzEqlLUGw1cBBT"><a href="#sec-2-2-量化验收指标-写进-README-逐条核销" data-page-node-id="cC6V7BpHNDCoSh3IVkTpSD">2.2 量化验收指标（写进 README，逐条核销）</a><ul data-page-node-id="uCzYzkvF5KGkH1BkPCKKc2">
+<li data-page-node-id="PSciV28Iu3fd4r6IQ8HIkB"><a href="#sec-A-Agent-能力-100-条测试指令集" data-page-node-id="qbhVz46Oo7S8bugdGPFLEB">A. Agent 能力（≥100 条测试指令集）</a></li>
+<li data-page-node-id="PjoimR1N3b2VjymEY33tZD"><a href="#sec-B-抠取算法" data-page-node-id="VriYflZzZ6p6iPpEl1mkBs">B. 抠取算法</a></li>
+<li data-page-node-id="VDJfSpBWh0uCCUGWCfgrjT"><a href="#sec-C-光影一致性" data-page-node-id="1zyczWS2aw8Cocbeb2zB9L">C. 光影一致性</a></li>
+<li data-page-node-id="g2RAUR6VAMX7xhJgXkDTGi"><a href="#sec-D-Critic-可信度" data-page-node-id="4DljVMQ8dayw3b3WHq2oRK">D. Critic 可信度</a></li>
+<li data-page-node-id="uqfZfJsSFfBDhVwwDpr6YC"><a href="#sec-E-系统性能与交互" data-page-node-id="rAsAjwuy0VsoSOmS3P0zBw">E. 系统性能与交互</a></li>
+</ul>
+</li>
+<li data-page-node-id="gsGB99HXPm3BTRCyAiOAac"><a href="#sec-2-3-成果包清单-10-10-交付-17-项" data-page-node-id="6tlZqCzfDPE2pCenc4L7Pw">2.3 成果包清单（10-10 交付，17 项）</a></li>
+<li data-page-node-id="nlAOGW7BRScNtlUQrsCoSf"><a href="#sec-2-4-三条生死线" data-page-node-id="cX6WEOlWJ5kgeNJ1CdIaCq">2.4 三条生死线</a></li>
+<li data-page-node-id="9KX3CqvK8fYgPCnQBYmirs"><a href="#sec-2-5-阶段性效果对照表" data-page-node-id="iReUlPpxrROxgEIATAcMhY">2.5 阶段性效果对照表</a></li>
+</ul>
+</li>
+<li data-page-node-id="iD1GVtYkDtl4uomgbAgUda"><a href="#sec-三-任务清单-WBS" data-page-node-id="kTPeDQJYYpgAuF0SmeEebq">三、任务清单（WBS）</a><ul data-page-node-id="XWPIqVhSl22yxHwiizdABo">
+<li data-page-node-id="Hfmd6qO5zFRDLWEQgEtH8P"><a href="#sec-3-1-A-组-Agent-后端-系统集成" data-page-node-id="ttP790peI73eqzOdahkxSI">3.1 A 组：Agent / 后端 / 系统集成</a><ul data-page-node-id="Xyotp9hdPslTADV3AV0AHZ">
+<li data-page-node-id="zDxZb1tSyao3lb5OEcF4pB"><a href="#sec-A1-详解-8-个原子工具-固定-不得随意扩张" data-page-node-id="JM0OWZPODPpGYS8ZH3Craz">A1 详解：8 个原子工具（固定，不得随意扩张）</a></li>
+<li data-page-node-id="ngGOyHQSYtwQeSDsv6Fcnc"><a href="#sec-A4-详解-Critic-决策逻辑" data-page-node-id="TWGjQXAGAT6glQqgP0m5Sn">A4 详解：Critic 决策逻辑</a></li>
+</ul>
+</li>
+<li data-page-node-id="85B8iPRWrrMrEFLFL9Ss7P"><a href="#sec-3-2-B-组-算法-训练-实验" data-page-node-id="RB4R0mAquX4Pw8Bc44ghLi">3.2 B 组：算法 / 训练 / 实验</a><ul data-page-node-id="qKZairSiV0qUpHyzS9VnGj">
+<li data-page-node-id="gejIxSd0gUnPJj7vzbnRyE"><a href="#sec-B4-必须产出的正式实验表-模板" data-page-node-id="MVcr7NY4qzceSVa5rbvJ1G">B4 必须产出的正式实验表（模板）</a></li>
+<li data-page-node-id="6PiA5T8EuIyEm7Cj23dcIM"><a href="#sec-B6-四组实验定义-严格按此执行-不得中途改口径" data-page-node-id="FXlHWoBNRyNGS02p1subZx">B6 四组实验定义（严格按此执行，不得中途改口径）</a></li>
+</ul>
+</li>
+<li data-page-node-id="jj75wbdCctuIkKtH7vR558"><a href="#sec-3-3-C-组-前端-语音-Demo" data-page-node-id="OwfIgUjaY1RpSuYph9WhNJ">3.3 C 组：前端 / 语音 / Demo</a><ul data-page-node-id="jLRqLAArqThAocBZHUouQF">
+<li data-page-node-id="8inygeTGKiUZp2z0qubLyX"><a href="#sec-C2-工作台布局-固定" data-page-node-id="Wo2fBeBmcyjERlnVvkjpgS">C2 工作台布局（固定）</a></li>
+<li data-page-node-id="UWmnWEOul3P7HCy2BxE3Bs"><a href="#sec-C3-语音交互必须可见" data-page-node-id="DjaqPp83AE5E7AQrvDj9J2">C3 语音交互必须可见</a></li>
+</ul>
+</li>
+<li data-page-node-id="cxAFDETZUyVAzzYwCjHt2Y"><a href="#sec-3-4-四个-Demo-剧本-提前定死-C8-按此录" data-page-node-id="1RXniV3hB6Z3I1Cu0gvBEG">3.4 四个 Demo 剧本（提前定死，C8 按此录）</a></li>
+<li data-page-node-id="lx1yKmDDqHfpIGgl9e9hRH"><a href="#sec-3-5-多轮测试剧本-C4-验收用-必须-5-轮全过" data-page-node-id="otsiO8JLQYbkZoRcXRECfG">3.5 多轮测试剧本（C4 验收用，必须 5 轮全过）</a></li>
+<li data-page-node-id="zQCwEwjgl8j7QcExk9x71a"><a href="#sec-3-6-公共任务-三人共同-Owner-轮值" data-page-node-id="BvYChFQWsDKhqVz6yZrKQV">3.6 公共任务（三人共同，Owner 轮值）</a></li>
+</ul>
+</li>
+<li data-page-node-id="2qgMCvmUauhRKklYG1C0Dz"><a href="#sec-四-总体架构与框架结构" data-page-node-id="T9VUA6ZdKfVRhvLoyqQW2m">四、总体架构与框架结构</a><ul data-page-node-id="ILvPTcUkzGpgWoh7veePgJ">
+<li data-page-node-id="IJ0HwRpk3A3RSchiN37My2"><a href="#sec-4-1-六层架构" data-page-node-id="TBVXkCeCuoLuBZoipiKACj">4.1 六层架构</a></li>
+<li data-page-node-id="7yYtqROGRJlygeGrikVLL1"><a href="#sec-4-2-控制流总图" data-page-node-id="G9hijwKv0BQB56SwLscE6L">4.2 控制流总图</a></li>
+<li data-page-node-id="Ef8Lo9rTsRGudw82bA7l5U"><a href="#sec-4-3-工具-Schema-骨架" data-page-node-id="4cX3tKTtsFJSSaf7VHCidz">4.3 工具 Schema 骨架</a></li>
+<li data-page-node-id="tWABgZ1OkSdNEEb4HPhMiH"><a href="#sec-4-4-版本-DAG-回滚模型" data-page-node-id="NFECBUyvxnFeMyp3ANICSL">4.4 版本 / DAG / 回滚模型</a></li>
+<li data-page-node-id="jqlF80izeCfYVVutRkGrsk"><a href="#sec-4-5-Critic-评分模型" data-page-node-id="lDVLVB828WDJQSTHePr5GC">4.5 Critic 评分模型</a></li>
+<li data-page-node-id="CuUBdXS6gqzHDsmZLhcryd"><a href="#sec-4-6-部署架构-维持开题方向-不推翻后端" data-page-node-id="ZF1jsHy4uOe4WHpiRVZBgF">4.6 部署架构（维持开题方向，不推翻后端）</a></li>
+<li data-page-node-id="yuT5j264gupDo8bTJXVvMn"><a href="#sec-4-7-推荐目录结构-固定-不得自创顶层目录" data-page-node-id="N9C2RuIUbihwTb9bjPoeCL">4.7 推荐目录结构（固定，不得自创顶层目录）</a></li>
+</ul>
+</li>
+<li data-page-node-id="t7GhoBl66nMLDtJQIVSdYL"><a href="#sec-五-实现方案概述" data-page-node-id="zEQ1bTwGqyHCaNaIw7atYN">五、实现方案概述</a><ul data-page-node-id="fafoYxxkCYpd4zwXDG4ANt">
+<li data-page-node-id="rXw63JG429ynwgN4hB2PE0"><a href="#sec-5-1-抠取-B-组主责" data-page-node-id="wOgdptEVh02Yw5O0vOHq51">5.1 抠取（B 组主责）</a></li>
+<li data-page-node-id="OCoBtNJx6vnYUfTgGO4nCL"><a href="#sec-5-2-背景生成-B-组-A-组接口" data-page-node-id="Q2tOFORBAwDmutUUMPquVf">5.2 背景生成（B 组 + A 组接口）</a></li>
+<li data-page-node-id="HAeQAvDrmlUziN8OUBzBxM"><a href="#sec-5-3-光影一致性融合-B-组核心研究点" data-page-node-id="XaD8Nbt0PC6CbEPshVnoB8">5.3 光影一致性融合（B 组核心研究点）</a></li>
+<li data-page-node-id="vQWSK2ogLr9e29rbBeXeh1"><a href="#sec-5-4-Agent-A-组主责" data-page-node-id="b7uy3QLFiG9V4BUhHyuyYm">5.4 Agent（A 组主责）</a></li>
+<li data-page-node-id="ZOyYXTq3hhplzVf31YCF6m"><a href="#sec-5-5-语音-C-组主责" data-page-node-id="7pg3yEWURteAyUZs8bv2ZY">5.5 语音（C 组主责）</a></li>
+<li data-page-node-id="f3Jt6uYfwQGB8AQEKj4lvV"><a href="#sec-5-6-前端-C-组主责" data-page-node-id="vGiTw6wFtLtymGOHD3Htvz">5.6 前端（C 组主责）</a></li>
+<li data-page-node-id="BS0IS95SG77tSlHcyHxf1W"><a href="#sec-5-7-降级方案-三级-必须实现" data-page-node-id="Sz4uIUfsp5ZjDntAMLdoPj">5.7 降级方案（三级，必须实现）</a></li>
+</ul>
+</li>
+<li data-page-node-id="uHT3GUtgcFLNjwZEWUq4nr"><a href="#sec-六-改进建议与风险" data-page-node-id="SZ4MQx3F1jrx9dGSXweU9U">六、改进建议与风险</a><ul data-page-node-id="SvF8P7R6Y7hHuBoA7Ko4Ho">
+<li data-page-node-id="GzyPRVQZimB2fxbv7iPTGC"><a href="#sec-6-1-对当前方案的-10-条改进建议" data-page-node-id="nNLQtJUwSOYqiPOrSnAPsL">6.1 对当前方案的 10 条改进建议</a></li>
+<li data-page-node-id="zCQSiHtcTcG0j2JUZw7vaU"><a href="#sec-6-2-风险登记表" data-page-node-id="BoK7qo1GAUMr9FEoxIldmT">6.2 风险登记表</a></li>
+<li data-page-node-id="7DK9qxEtX8EDX8zWDuEj4g"><a href="#sec-6-3-环境新坑与规避-实践层面-提前规避可省数天" data-page-node-id="LnAcal7dwx7NyHz41desZG">6.3 环境新坑与规避（实践层面，提前规避可省数天）</a></li>
+<li data-page-node-id="jNPlA1ExPFM9NHwGlornkD"><a href="#sec-6-4-未来-72-小时行动清单-从今晚开始" data-page-node-id="Va4aCQ1xr3L3i6vYx9BAlN">6.4 未来 72 小时行动清单（从今晚开始）</a></li>
+<li data-page-node-id="cCyXWmDPU2NQwaVpjFSjBO"><a href="#sec-附录-A-术语表" data-page-node-id="Y8WOVAmuya8N2BIHiPAtNH">附录 A：术语表</a></li>
+<li data-page-node-id="KY3GFuq0gpq9kcAO9RWbIR"><a href="#sec-附录-B-实验记录模板" data-page-node-id="mfXDbBAFRe2Z3bdfQo63pf">附录 B：实验记录模板</a></li>
+<li data-page-node-id="fntTecYcjM9N2PsncbhFo4"><a href="#sec-附录-C-变更记录" data-page-node-id="QxMTO7rjauxCWiQdckZHEQ">附录 C：变更记录</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</nav>
+  </aside>
+  <main data-page-node-id="WWbCblyzpOi9o5TYJ2lebN">
+    <article class="paper" data-page-node-id="HXwljqthoFiXaRt3SwpOLF">
+<h1 id="sec-多模态图像合成-Agent-项目总规范-V1-0" data-page-node-id="PONpaQPXo3HxGpVXvLTvK6">多模态图像合成 Agent 项目总规范 V1.0</h1>
+<blockquote data-page-node-id="YWoVGn5OpYUchdrF9u3ARB">
+<p data-page-node-id="AheoMyIVpQ7sDkykouCviL"><strong data-page-node-id="gtaChcE6X9gCFLEM8SEhPH">项目全称</strong>：面向真实感图像合成的图像抠取与光影一致性融合方法研究——多模态交互式 Agent 系统
+<strong data-page-node-id="mmvC6ErhoB2QGt5byryRRK">适用周期</strong>：2026-09-08 — 2026-10-10（有效工期 24 个工作日，10/01–10/07 国庆不计入）
+<strong data-page-node-id="IRX31ADCLr3qmLsSNAx94y">团队规模</strong>：3 人（A / B / C 三个 Owner 制）
+<strong data-page-node-id="yBPaHb9DpKf8RbZxyoDa9K">文档性质</strong>：项目总体架构 + 分工 + 研究实验规范 + 开发部署规范 + 验收标准，五合一
+<strong data-page-node-id="gy5hwdf6Rmjc2qzRAEdFx2">配套文件</strong>：<code data-page-node-id="gD1DYTNhYEWIFAkX5kv2Xi">任务看板_认领表_V1.0.md</code>（WBS 认领用）、<code data-page-node-id="7bNfpRdVI1WGty68E67sjv">项目总规范_多模态图像合成Agent_V1.0.html</code>（网页版）</p>
+</blockquote>
+<hr  data-page-node-id="UaiXQAEEcF2XvvdSWLBobT"/>
+<h2 id="sec-0-如何使用本文档" data-page-node-id="I53si1RRcWZ2TqQNyI7XEC">0. 如何使用本文档</h2>
+<table data-page-node-id="h0s6E3H8rwmaqB15y27wHs">
+<thead data-page-node-id="TRLdaZBu0nYhLZx66kCsxi">
+<tr data-page-node-id="ANvcIwidlj46assbYAXfaR">
+<th data-page-node-id="mbSGjrenfEFukeTSfBAUo7">你是谁</th>
+<th data-page-node-id="2JvcrUi1xeQXdyiYUhTYlH">你该读哪几节</th>
+<th data-page-node-id="BmigTlFUfmWFhyZRKzUP3h">你今天要做的第一件事</th>
+</tr>
+</thead>
+<tbody data-page-node-id="j2suK22l6Og2AyAI4yM3vA">
+<tr data-page-node-id="xzt2Qnjnl7xC3OktOlciWz">
+<td data-page-node-id="AtJYD3RKbTqBQ59ppjgQDn"><strong data-page-node-id="tS9236waugJ0cqBeLL3app">A：Agent / 后端 / 系统集成</strong></td>
+<td data-page-node-id="w8VVuF6XwAETkmsMDFd52l">§3.1 任务清单 → §4.3 工具 Schema → §4.4 DAG 与回滚 → §5.4 Agent 实现</td>
+<td data-page-node-id="al7a6cmZPfJnsc6ziEErwA">建 <code data-page-node-id="u2mgiobWUA4ynnl1KP4liy">agent/schema/</code> 目录，把 T01–T08 八个工具的 <code data-page-node-id="29KFNrxOH8Ci0R9F5PZq8i">input_schema / output_schema</code> 写成 JSON 文件提交</td>
+</tr>
+<tr data-page-node-id="fi0eF7Bbx8ppL0KI3JiHiI">
+<td data-page-node-id="cQcIGsP5wdnQXHKzBhJX8C"><strong data-page-node-id="Z8Q8EHxvQxyzS4YllfVEs9">B：算法 / 训练 / 实验</strong></td>
+<td data-page-node-id="sdzRMdD0nFv6QBKluCHxEO">§3.2 任务清单 → §5.1 抠取 → §5.3 光影 → §1.5 训练规范 → §2.2 指标</td>
+<td data-page-node-id="gAsdCSxmat4YzrLwpfY6a2">跑通 BiRefNet 推理冒烟，输出第一张 alpha 图并存档到 <code data-page-node-id="UH7xDyzJ9omlMikfjTJN4N">experiments/baseline/</code></td>
+</tr>
+<tr data-page-node-id="tlxknXaH2EQbOY1SBiTC42">
+<td data-page-node-id="QOtd2CZa1VPMBx8GyrEXMs"><strong data-page-node-id="HIHupjC6MW4uJmcGJz6HBc">C：前端 / 语音 / Demo</strong></td>
+<td data-page-node-id="ETpxbPAeb9noMkXHnxjv3L">§3.3 任务清单 → §4.2 数据流 → §5.5 语音 → §5.6 前端</td>
+<td data-page-node-id="LOJ3jFpOvmbSHlGtOE1BCk">搭出首页"上传 + 一句话"双入口静态原型，接 mock 数据跑通界面</td>
+</tr>
+<tr data-page-node-id="rIRBJPeiATDiE2fjFky9F8">
+<td data-page-node-id="tfQLPvUzyJBWfDzTy1OxYD"><strong data-page-node-id="HdaIlAFBfp61EuvU1Llhk7">指导教师 / 评审</strong></td>
+<td data-page-node-id="nCCXCsXjiAwQwBLqKIGRNG">§2 预期效果与指标 → §6 改进建议与风险</td>
+<td data-page-node-id="11XYlV9GjJEpwYYxFWqgWl">确认 §2.2 指标口径与 §2.4 三条生死线</td>
+</tr>
+</tbody>
+</table>
+<p data-page-node-id="WFCHea1LGvGCaCh8aviBAl"><strong data-page-node-id="ezGE565Vz8CliPEnOHAjQH">三条硬规则（写在最前面，因为最容易翻车）：</strong></p>
+<ol data-page-node-id="nnbiZFQ9pA81zXxoIjUrxQ">
+<li data-page-node-id="OzNigfPMBAh5O2Lo1HOHBe"><strong data-page-node-id="VZoJwE8poDnPgk2EfF2bBG">接口先行</strong>：任何模块开工前，先把 <code data-page-node-id="pdRNGjNHgOCZPxMaONDZJY">Input / Output / Error / Latency</code> 四项写进 <code data-page-node-id="ZVYpp6VFxRVr30DWY6U3CT">agent/schema/</code>，评审通过后才允许写业务代码。</li>
+<li data-page-node-id="LOE4EL1OB3isb9Ac4O9gl4"><strong data-page-node-id="SCeVjpX05fRx3TScidPNrq">训练与主线解耦</strong>：训练失败时生产环境自动回落到 Base Model，Demo 永远不能因为训练挂掉而不可演示。</li>
+<li data-page-node-id="YKpgDIt3If6jcq5Z9vk3p3"><strong data-page-node-id="KuLCAKmPU8vkWEGIdRpI8E">一切可恢复</strong>：训练必须 checkpoint + resume + log + config 四件套齐全；租卡只是算力，不能成为项目状态。</li>
+</ol>
+<hr  data-page-node-id="BxxWsqOG5rEi1BuSL9Gkzi"/>
+<h1 id="sec-一-总体规范与标准" data-page-node-id="OGinB6KLNCJwnWApI3Wa1k">一、总体规范与标准</h1>
+<h2 id="sec-1-1-项目定义" data-page-node-id="3kvUnhDn1YrQAWE7DRT1fB">1.1 项目定义</h2>
+<p data-page-node-id="8XYCp1iOLrxCvCfOt3FVJW">不是"上传图片 → AI 生成图片"的工具，而是一个<strong data-page-node-id="nq5WjGz64NVhG6uFFeZRZR">以执行计划 DAG 为中心、可自评修正、可条件回滚的多模态图像合成 Agent 系统</strong>。</p>
+<p data-page-node-id="Y6kiSTGFADlo4yOrCKGTKi">主链路（与开题报告一致）：</p>
+<pre data-page-node-id="a49BymBlgNGqHaBNxWXBmI"><code class="language-text" data-page-node-id="7rugluByBHifql41omtDLH">高精度抠取 → 背景生成 → 光影一致性融合 → 结果自评修正 → 语音反馈
+</code></pre>
+<p data-page-node-id="8uYnLE4VPCZ6gHp3pjZ3wx">四个研究方向锚点（不得漂移）：</p>
+<table data-page-node-id="vD6doPgEDegFGnLcNT0YjD">
+<thead data-page-node-id="0oHjFJNURFrq3o2f7HgBOv">
+<tr data-page-node-id="N8yY9Shs5OnvqEkD5TRNIX">
+<th data-page-node-id="N7QFexMolQzlftnanEMtQ8">方向</th>
+<th data-page-node-id="3efAgDA854LaCyFdOz2aRT">具体研究问题</th>
+</tr>
+</thead>
+<tbody data-page-node-id="my9UBsxuNJBzCECGmd6Efu">
+<tr data-page-node-id="pIRiZ7Wf6XFoFRtiM9P80u">
+<td data-page-node-id="RDP2VUPTckJXe0lxoKf9mi">R1 抠取</td>
+<td data-page-node-id="lrsouJEJ0tjoOvO6lhONU2">透明 / 半透明区域 alpha 估计（玻璃、薄纱、发丝、复杂背景）</td>
+</tr>
+<tr data-page-node-id="e2yqNkuJKpDJ7EdAqUY9El">
+<td data-page-node-id="mYgQIsc9zcvBPn25yIeyXG">R2 光影</td>
+<td data-page-node-id="OxpkOAT2GYkS2fNUAHhyah">光照 + 阴影 + 几何联合一致的合成（消除"贴纸感"）</td>
+</tr>
+<tr data-page-node-id="oHxfWW0HEWYqSW7TpIVHBH">
+<td data-page-node-id="nGClxhHJkcQEXAUR09rFAF">R3 Agent</td>
+<td data-page-node-id="FjbmAaQhPK7kGDEuFRFYol">基于执行计划 DAG 的稳定多轮交互（缓解多轮编辑退化）</td>
+</tr>
+<tr data-page-node-id="b24AdwH7PdX0mGoBim0OB4">
+<td data-page-node-id="wrxbGDr4UClc2lPln1HmIp">R4 交互</td>
+<td data-page-node-id="ct7wOU7YJECDzrAqlrY0zY">语音 + 空间指代（点击/框选）的中文多模态交互范式</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sec-1-2-开发规范-8-条-强制执行" data-page-node-id="mDFX5T3JJfmLlqOaxs5zyk">1.2 开发规范（8 条，强制执行）</h2>
+<h3 id="sec-N1-接口先行" data-page-node-id="3ZS9hp7fJI2fKsDoGHhdKP">N1 接口先行</h3>
+<p data-page-node-id="SXHENJnvidLQydSr2se6Zu">所有模块（含内部脚本）先定四件套，再开发：</p>
+<pre data-page-node-id="IZATMkzNWgRycgCQs7Eulm"><code class="language-text" data-page-node-id="cuq4IlPBwLMzHoLsu5mHk1">Input   —— 明确的 JSON Schema / 文件路径 / 张量形状
+Output  —— 明确的 JSON Schema / 产物路径
+Error   —— 错误码 + 可重试性标记（retryable: true/false）
+Latency —— P50 / P95 目标，超时即降级
+</code></pre>
+<h3 id="sec-N2-模型与-Agent-解耦" data-page-node-id="OF711XJUrDYbOCNqH0HHzN">N2 模型与 Agent 解耦</h3>
+<p data-page-node-id="zbIK4cLAXPkxwFVbRAdbBK"><strong data-page-node-id="WJ7FzAqHxDfZ7e7YCe45KP">禁止</strong> Agent 直接依赖具体模型权重或具体推理框架。强制三层：</p>
+<pre data-page-node-id="7K1I6Q8UkYFaEHRvFYpFWn"><code class="language-text" data-page-node-id="uW0CVJGGeRTO0G7p1cDgqn">Agent  →  Tool Interface (JSON Schema)  →  Model / Script
+</code></pre>
+<p data-page-node-id="mZybocs0WsLSobtTrMQYx8">换模型只改 Tool 内部实现，Agent 代码零改动。违反此条的代码不予合并。</p>
+<h3 id="sec-N3-训练与主线解耦" data-page-node-id="6O8kEjR4NhuXqRr93XHYIS">N3 训练与主线解耦</h3>
+<pre data-page-node-id="0BuAHfc5pxiCkEPvwSwuZ1"><code class="language-text" data-page-node-id="tMHLKUHM7p4zFiEVVrjuXp">Training → Checkpoint → Validation → Model Registry → Production
+                                                   ↘ (失败) Base Model
+</code></pre>
+<p data-page-node-id="ungf0lfin9EYmbdU1WYC2F">Model Registry 用 <code data-page-node-id="LGKiVaVbZ7Tkhiybupmaun">model_registry.yaml</code> 维护，字段：<code data-page-node-id="2mqC3FfRBWg1rN16DYfZ5m">name / version / path / metrics / status(staging|prod) / fallback</code>。</p>
+<h3 id="sec-N4-所有训练必须可恢复" data-page-node-id="VA4JvNyD5ThYKsum3j9Ndc">N4 所有训练必须可恢复</h3>
+<p data-page-node-id="ZNoPqXE4DLn4vubCWXM46X">四件套缺一不可：<code data-page-node-id="GoD5ughMtzBM2P5T7AsuEe">checkpoint</code>（每 20–30 分钟）+ <code data-page-node-id="bSHdiLk7XGhJ7qGG6y92Qh">resume</code> + <code data-page-node-id="YMLNH3dtEIIUTNEoGtf7yj">train.log</code> + <code data-page-node-id="m0NGirKbPlD92RLe2MkG6n">config.yaml</code>。
+单次租卡任务 <strong data-page-node-id="8QjWZrNjhmYnPFClxl8S3K">≤ 24 小时</strong>，每个 epoch 做一次 evaluation，最终保留 best + last 两个 checkpoint。</p>
+<h3 id="sec-N5-实验可复现" data-page-node-id="ozqgsbv2RagbM1FBeb2RB9">N5 实验可复现</h3>
+<p data-page-node-id="0FXJhcAP0SJCfoo0PTZ4HT">每个实验目录必须包含：</p>
+<pre data-page-node-id="VfSG5f6jWdCaylKlV3s3fZ"><code class="language-text" data-page-node-id="3RhHDEGsjuLHcDU9PjQrbw">experiments/&lt;exp_id&gt;/
+├── config.yaml        # 完整超参
+├── train.log          # 原始日志
+├── eval.csv           # 逐样本指标
+├── metrics.json       # 汇总指标
+├── checkpoints/       # best / last
+├── visual/            # 对比图（before / after / gt）
+└── README.md          # 一句话结论 + 失败案例
+</code></pre>
+<p data-page-node-id="usBLihCvRBHEuAElq5HuEN"><code data-page-node-id="LbhcwGEN6NeFO0vtVZtJGv">exp_id</code> 命名：<code data-page-node-id="dIy1eHJ0wXUN2GV61E8QTb">YYYYMMDD-&lt;方向&gt;-&lt;序号&gt;</code>，例：<code data-page-node-id="bYghEjC6mO0gXJlLiHujju">20260912-matting-01</code>。</p>
+<h3 id="sec-N6-代码与分支规范" data-page-node-id="6v9JmtMDXoPA6GrNFsXySg">N6 代码与分支规范</h3>
+<table data-page-node-id="jXe6HpeX1oUVEWeCqdIyrD">
+<thead data-page-node-id="5a3S6kINJCq4qwfUwUzAQl">
+<tr data-page-node-id="dCTV1YODoXkxDSFau8o8Nl">
+<th data-page-node-id="Htdh8MB4TAjvW8FQA70yVz">分支</th>
+<th data-page-node-id="RRF16qJTzppbvIDKkarwsY">用途</th>
+<th data-page-node-id="G2mLD8jrDEaWVTmJ7dkxqu">保护级别</th>
+</tr>
+</thead>
+<tbody data-page-node-id="qrcRIhhZ7Te6nvcRzf6SHT">
+<tr data-page-node-id="UEspqkOUzCf0DaDrwL8VCu">
+<td data-page-node-id="55jBJIC2qtCHis9hHCZGlT"><code data-page-node-id="qZB5IclfwCf9djbcBeBQrI">main</code></td>
+<td data-page-node-id="GFp2lMR9vKMWFtgMDJiGZ7">可演示版本，任何时刻都能启动</td>
+<td data-page-node-id="FWRcWQbkpwN3hDT2LKgglx">受保护，仅 PR 合入，需 1 人 review</td>
+</tr>
+<tr data-page-node-id="GQZZLbfDOqqGpJrJI550Cx">
+<td data-page-node-id="e4CHc3ilQUjOYI6Yt21Ui3"><code data-page-node-id="hrWsIZOdYTw1Tl2VtRBy5G">dev</code></td>
+<td data-page-node-id="2DqGjezkzCdoZN3Znh0rTP">集成分支</td>
+<td data-page-node-id="qTd14SPmg7EZDs2WhE4Hyr">需冒烟通过</td>
+</tr>
+<tr data-page-node-id="9PVbUDI9ds3s7kJU50WH7G">
+<td data-page-node-id="j4CUSXTnfDaMqOJF0sdPFA"><code data-page-node-id="HlsrrERBZaOuluuZGtXuJm">feat/&lt;wbs&gt;-&lt;简述&gt;</code></td>
+<td data-page-node-id="uApvZyzGMvbW67fcxrItKM">个人开发</td>
+<td data-page-node-id="A76IcsUMrYhv4zGSOYCwB5">例：<code data-page-node-id="G0FFVAMJzvsxL4TQYTKG9P">feat/B3-matting-finetune</code></td>
+</tr>
+<tr data-page-node-id="ZHz1MlgkIXTwkut5hyritP">
+<td data-page-node-id="4s9FLS9txctoFQQAFZbKdE"><code data-page-node-id="HCcbGEAUVLK89EO3AqhusU">exp/&lt;方向&gt;-&lt;序号&gt;</code></td>
+<td data-page-node-id="jkPSdfpGoxGYhFAOuCTg50">实验脚本，不保证可复用</td>
+<td data-page-node-id="RqeRBBktDWB7YioyBn5ee9">允许不合并</td>
+</tr>
+</tbody>
+</table>
+<p data-page-node-id="rYeun5OGlNzstVgDrhP6UO">提交信息：<code data-page-node-id="T0MlRrqEDyIPfvdeh1fbuS">[WBS] 动词: 简述</code>，例：<code data-page-node-id="ABUnrkq4EDRst3dICAo9V0">[B3] feat: 添加透明物体难例集</code>。
+大文件（权重、数据集）<strong data-page-node-id="nn0wFYSpOgtqg3RkKiPJrx">必须</strong>走 Git LFS 或只存 <code data-page-node-id="0MvAZR70AggBq3kz5e34EA">data/</code> 外的对象存储路径，<strong data-page-node-id="ZbRG3uxy9lQDtgAayBLYe2">禁止</strong>直接 <code data-page-node-id="9v84rnkaFB2bhg0ppFpyIf">git add</code> 超过 50MB 的文件。</p>
+<h3 id="sec-N7-目录与命名规范" data-page-node-id="erYyrAqJiWeSdWSt6bV3bw">N7 目录与命名规范</h3>
+<ul data-page-node-id="UIY7R2ofTxhGKWZ9gfREm7">
+<li data-page-node-id="LveTWdJguGCCP1XnZGTbAo">目录结构固定为 §4.7，任何人不得自创顶层目录。</li>
+<li data-page-node-id="mGkkjdM1yj6YFBLF6scEJa">Python 文件 / 变量：<code data-page-node-id="oFoQhndHsPrj7CCRMahICv">snake_case</code>；前端组件：<code data-page-node-id="ikPqN56wcXXVoRP86iWxOx">PascalCase</code>；常量与错误码：<code data-page-node-id="5Ag7D8sEcZGlRBhLr1o3Cg">UPPER_SNAKE_CASE</code>。</li>
+<li data-page-node-id="4d5XMrozAPFYDpn1cer8uk">图片产物命名：<code data-page-node-id="hQGxNTRIKhTrmasCECCWKY">&lt;task_id&gt;_&lt;node_id&gt;_&lt;version&gt;.png</code>，例：<code data-page-node-id="mdoKEkTrq7Cl81cyWGNJoc">t20260910a_n04_v3.png</code>。</li>
+<li data-page-node-id="Fi3sDlbsMXJ8YGGhU2mz5m"><strong data-page-node-id="9YX8lN0MhfIudgzZ4Z3cO1">全项目禁用中文路径与中文文件名</strong>（避免 Windows / Linux 跨端编码问题，见 §6.3 环境新坑）。</li>
+</ul>
+<h3 id="sec-N8-文档与交付规范" data-page-node-id="E2mkyWhiWhie2StvwxeD7a">N8 文档与交付规范</h3>
+<ul data-page-node-id="YT9alC6G1NCzTw3Fkh46Il">
+<li data-page-node-id="mMoRUw3IUGEFlOKixPYLpY">每个 WBS 任务完成时必须更新三处：任务看板状态、对应 <code data-page-node-id="hIH1JcbDAaPkZGydQ8XMq9">docs/</code> 文档、<code data-page-node-id="7yLhsGLoFylP4NjqOTi7Ck">experiments/</code> 记录（若涉及实验）。</li>
+<li data-page-node-id="C3I2jSwYgCIRSn70UNqfbt">每周日 21:00 前提交《周进展简报》到 <code data-page-node-id="cnLa2dbuCBdejH61Aqf7RC">docs/weekly/</code>，格式固定：本周完成 / 下周计划 / 风险 / 需要协助。</li>
+</ul>
+<h2 id="sec-1-3-研究与实验规范" data-page-node-id="xeDbto1l67hKr5jISl29LA">1.3 研究与实验规范</h2>
+<h3 id="sec-E1-数据集划分" data-page-node-id="pKpOCcsFvlDJfgs1Bt9JpF">E1 数据集划分</h3>
+<pre data-page-node-id="FwF36xv0e6Zda3ZCVtJgZp"><code class="language-text" data-page-node-id="NoUkfjf03lx4QMpYTePM1x">train / validation / test / hard-case test
+</code></pre>
+<p data-page-node-id="yhicbIkL3EpeSK09xAYabF">四个集合<strong data-page-node-id="QqAfuNaqQt0OQdFnwll2OD">必须物理隔离</strong>，禁止样本泄漏。hard-case test 单独建集：</p>
+<table data-page-node-id="UPHrmy7d3PbSS31mAlhnNL">
+<thead data-page-node-id="D9BznvAqcvYqe1K78TmVFh">
+<tr data-page-node-id="5jyWrqe06GzJfmTNuhnXFG">
+<th data-page-node-id="DRc6ctnkXz7NIgGRfsFL4Z">难例类别</th>
+<th style="text-align: right;" data-page-node-id="LzItBp0vkm1qa7AM1ZiNIE">目标数量</th>
+<th data-page-node-id="thu1xQ918kf9p0ZAoLkTFi">说明</th>
+</tr>
+</thead>
+<tbody data-page-node-id="okx6cDSqnjU3qLngsZeEPF">
+<tr data-page-node-id="WC3rjAlGcd6y76H7ufmLPO">
+<td data-page-node-id="nwtCs95umBBVVjNw3S9Hb2">Hair（发丝）</td>
+<td style="text-align: right;" data-page-node-id="f2HiD50e3ESpbiL4kTUAVT">≥ 30</td>
+<td data-page-node-id="Jn4gsU6FyaQVrVQmkVfAve">细碎边缘</td>
+</tr>
+<tr data-page-node-id="IpThOjrGYIZjA8R8ycuxp8">
+<td data-page-node-id="xq3aBiJhquzsNILPS4hs7R">Glass（玻璃）</td>
+<td style="text-align: right;" data-page-node-id="VV1DFEXmUqQIwGZ35hZuvy">≥ 30</td>
+<td data-page-node-id="QAwtadW2tlYacbzbRpGf7l">高透明 + 折射</td>
+</tr>
+<tr data-page-node-id="wktW67adMDa4N407GPOHaw">
+<td data-page-node-id="MKXiiZ8KhiNKqKPC0AWslJ">Veil（薄纱）</td>
+<td style="text-align: right;" data-page-node-id="DK8OiQvTgH1BC6Qoc8ZHr8">≥ 20</td>
+<td data-page-node-id="NI0GJ1ec8BfkX4kWaVzU1M">大面积半透明</td>
+</tr>
+<tr data-page-node-id="fu3Kq4W10WWPJ4wQFBSOmV">
+<td data-page-node-id="Fh4pzptagmjR5U2kR6tU7J">Transparent（透明体）</td>
+<td style="text-align: right;" data-page-node-id="leiRq46jZYqVvB9aBo3eUj">≥ 20</td>
+<td data-page-node-id="6cNknm5QXRbElnS0fGFPeU">塑料瓶、水杯</td>
+</tr>
+<tr data-page-node-id="WFUCBHkgxJBAje3DG4oEgm">
+<td data-page-node-id="r2GQ7slnPxjeLkqFdXYWWH">Semi-transparent（半透明）</td>
+<td style="text-align: right;" data-page-node-id="YtUnJocDDOQzycEqxIJ4r4">≥ 20</td>
+<td data-page-node-id="cE1sMTWRIKC2SA8n29vLYC">烟雾、水花</td>
+</tr>
+<tr data-page-node-id="l73b1H3nHoxM183rDV5PHE">
+<td data-page-node-id="0yuR5akH2Zcu09AENl46MF">Fine Edge（细边缘）</td>
+<td style="text-align: right;" data-page-node-id="ja0f11hUW0CNHqm3dZMUQ5">≥ 20</td>
+<td data-page-node-id="G045PLeVt9A1hSgV3TkXwS">羽毛、树枝</td>
+</tr>
+<tr data-page-node-id="LZ6rJxWKZN9DCq4TDHPlK3">
+<td data-page-node-id="UjGOvBs394RUNaoNHbg8AN">Complex Background（复杂背景）</td>
+<td style="text-align: right;" data-page-node-id="7kUiTYrBnUEmN1anREzkxR">≥ 30</td>
+<td data-page-node-id="fMENcKVpprPrjgnsh7huYn">前景背景颜色相近</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sec-E2-基线必须先行" data-page-node-id="DADsFr6KcjKlyCmDlYD5QP">E2 基线必须先行</h3>
+<p data-page-node-id="aAwSYmgpVuXtAI3B6mfdvA"><strong data-page-node-id="1OGYtwpcmTYaMP0Khq4g11">任何"我们的方法"之前，必须先有基线数据。</strong> 禁止在没有 baseline 的情况下汇报改进。</p>
+<h3 id="sec-E3-指标口径统一" data-page-node-id="FJOoUd8MAOfdp3byujLmK9">E3 指标口径统一</h3>
+<ul data-page-node-id="5fpDNzkyBnM4Dx04AaXYQO">
+<li data-page-node-id="eeNZLGkvSAOIm3D0Jf4D6S">抠取：Composition-1k 协议的 <strong data-page-node-id="cdOAQPZll4yAf4zJ9T1jXi">SAD / MSE / Grad / Conn</strong>（SAD、MSE、Grad 越低越好，Conn 越低越好）。</li>
+<li data-page-node-id="ejjBxyOgJOQR3vN6OlAUuk">光影：主观 5 分制（光照一致性 / 阴影一致性 / 色彩一致性 / 整体自然度），<strong data-page-node-id="zhpwOoUEgp1454PEMmMebm">双盲、随机顺序、n ≥ 10</strong>。</li>
+<li data-page-node-id="fz2IXOAzuRxtW4uZMncmTw">Agent：Tool Selection / DAG Order / Parameter / Spatial Reference 四个准确率，测试集 ≥ 100 条指令。</li>
+</ul>
+<h3 id="sec-E4-失败案例必须留档" data-page-node-id="5sCDZGbYX7tWE9DlL5kvlt">E4 失败案例必须留档</h3>
+<p data-page-node-id="Vp3abAwof0kUavD6emH1BP"><code data-page-node-id="YCEVquEWRZ1iGZxfjCsQ1k">experiments/failure/</code> 目录，每个案例一张对比图 + 一句话归因。<strong data-page-node-id="QHmRk0GPwYcaBVEF07hGvS">这是论文与答辩最有价值的素材，不要只存成功案例。</strong></p>
+<h2 id="sec-1-4-租卡与算力规范" data-page-node-id="9hhirnXNqzd0smuR0mwDDK">1.4 租卡与算力规范</h2>
+<pre data-page-node-id="AjwY92GHdbsY33nU5ogGOK"><code class="language-text" data-page-node-id="JhGCc3en6QNtV4XvQui650">本地实验室服务器 A6000
+    ↓  1/10 数据冒烟（≤30 分钟）
+Docker 镜像构建（锁定 torch / cuda / 依赖版本）
+    ↓
+租卡平台正式训练（单次 ≤ 24h）
+    ↓  每 20–30 分钟 checkpoint
+    ↓  每 epoch evaluation
+下载 best checkpoint → 本地验证 → Model Registry
+</code></pre>
+<p data-page-node-id="5izK9dQF64PFPnKWFPIcXj"><strong data-page-node-id="tclLxSk0clG9tym6vlyaao">租卡前检查清单（缺一项不准下单）</strong>：</p>
+<ul data-page-node-id="X8Xx7Z8g8HBSMtwCzhTOFt">
+<li class="task-item" data-page-node-id="7QfiF2AXsGibGJdNMJQQaY"><input type="checkbox" disabled data-page-node-id="a81GVBKgL6OSsvJWtSROnM"> 冒烟脚本在本地跑通且 loss 下降</li>
+<li class="task-item" data-page-node-id="9oXzWOw83XWxcXZ2Fd1wDw"><input type="checkbox" disabled data-page-node-id="6YUMmQvhmioYQDlc1F1Y3T"> Docker 镜像可离线构建，依赖版本锁死（写 <code data-page-node-id="l7J1RBGiCL7f8M2YKmO8Rl">requirements-lock.txt</code>）</li>
+<li class="task-item" data-page-node-id="Cs9DOeIYLiYIKmlu4era1T"><input type="checkbox" disabled data-page-node-id="EjkCGtjyeGIpH57sZFhMky"> <code data-page-node-id="VtBCMPfR3TqKGAXkqU7Iu7">config.yaml</code> 里 <code data-page-node-id="9AvNjKqI9AWl3ZyoZjSRIj">resume_from</code> 字段已配置</li>
+<li class="task-item" data-page-node-id="gVv7MSMHTaz4BnhKE85DrG"><input type="checkbox" disabled data-page-node-id="EvRX0rEPjncDCSYh4w5e8D"> 产物自动同步到对象存储 / 网盘的脚本已验证</li>
+<li class="task-item" data-page-node-id="H0D7TbalIEuvVLfHdleawg"><input type="checkbox" disabled data-page-node-id="gc729cj9Vfglw17OhFPEQ7"> 预算与时长上限已确认（建议单次 ≤ 24h，总预算提前报备）</li>
+</ul>
+<h2 id="sec-1-5-例会与节点机制" data-page-node-id="Bx3pF9hNEgbQbsavJlMATZ">1.5 例会与节点机制</h2>
+<table data-page-node-id="fbfC7q2E7JmO5w3oCl0Jju">
+<thead data-page-node-id="QC7rYgnKGWyFKzXXJBkfxY">
+<tr data-page-node-id="5Bt21fJXZbxW6jZK59Va93">
+<th data-page-node-id="NKm42vdw58EQnNDhBJ0vPJ">机制</th>
+<th data-page-node-id="92ODQaBVSvjjixqI7Cu5HE">频率</th>
+<th data-page-node-id="46y7v84Xo1sVQKVKpIHZEF">内容</th>
+</tr>
+</thead>
+<tbody data-page-node-id="EQhK7rwBwngJkFnORl9JLl">
+<tr data-page-node-id="jTFgkG0kD3cZMHzJ8bh8GX">
+<td data-page-node-id="I1yq6Oy6ZbJc1kqkq94KLu">站会</td>
+<td data-page-node-id="3OhMcCJPZNTPOwTXp2du21">每日 10 分钟（异步文字即可）</td>
+<td data-page-node-id="yO9hAfvZAbFrJQ0vvJCJqt">昨天做了什么 / 今天做什么 / 是否被阻塞</td>
+</tr>
+<tr data-page-node-id="PaITWnNFhgxt8O7Psc32pA">
+<td data-page-node-id="ZWfrMcF7ew9BbjTPAu9d8D">集成日</td>
+<td data-page-node-id="kXWDfOV16CJTyNRsqFTnpW">每周三、周日</td>
+<td data-page-node-id="zff0sNxOVUB1GWBptk5N3N">三人代码合并到 <code data-page-node-id="GnL3hsnyXa5oiUQR1CvCNQ">dev</code>，跑通端到端冒烟</td>
+</tr>
+<tr data-page-node-id="BYs4oPslitUHilAFG6ZBJA">
+<td data-page-node-id="6wpGc8qm0O970AtLsEEm0n">周会</td>
+<td data-page-node-id="8ECCiiDoszQV9BFtj5HYHy">每周日 21:00</td>
+<td data-page-node-id="tkTOrA4mO5PDIEp2OdljJ9">对照 §3 任务看板逐条核销，更新风险表</td>
+</tr>
+<tr data-page-node-id="OFABiUQGYRdxH2xvhO9QLc">
+<td data-page-node-id="N2G3NIt6NoQl5ZtLXVLZtj">封版</td>
+<td data-page-node-id="ijUZexG6yy7yBTF0B8WNoz">09-30</td>
+<td data-page-node-id="x3S06xV8jSLxrCESU4Wa90">Demo Freeze，之后只修 bug 不增功能</td>
+</tr>
+</tbody>
+</table>
+<hr  data-page-node-id="qAnEZ9F2Zc3ixiD5AtPUIg"/>
+<h1 id="sec-二-预期达成效果与成果指标" data-page-node-id="9go1TDfzgMYeDtQkNrJRnQ">二、预期达成效果与成果指标</h1>
+<h2 id="sec-2-1-最终系统形态-用户视角" data-page-node-id="Am8lZsi6stQzUoJN4DQKVi">2.1 最终系统形态（用户视角）</h2>
+<p data-page-node-id="T3ug0HVxYXnaEO0np56MSH">用户完成一次完整操作：</p>
+<blockquote data-page-node-id="FDX6zcze8OGwp584KBbKVq">
+<p data-page-node-id="OsSUim0yCA8WMyDycZaNQu">上传人物照片 → 说："把这个人物放进傍晚的咖啡馆，光从左边照过来，阴影自然一点。"</p>
+</blockquote>
+<p data-page-node-id="BBHVeC7ni3ELKHfe7MpW0n">系统自动执行：</p>
+<pre data-page-node-id="ucyhDwZeWAgIeIUaCqei3M"><code class="language-text" data-page-node-id="tbogMqjrmgH1zbkINSbccj">语音识别 → 理解对象 → 消解空间指代 → 生成执行计划 DAG
+  → 人物抠取 → 背景生成 → 环境光分析 → 人物重打光
+  → 接触阴影 → 色彩/景深和谐化 → VLM Critic 打分
+  → 发现问题 → 自动修正 → 输出结果 → 语音播报
+</code></pre>
+<p data-page-node-id="EHkU9rztEysjPtKPTLN7hB"><strong data-page-node-id="Zxyk4yyAqYdlCsfkNX5S6f">开发者全程不需要手动介入。</strong></p>
+<h2 id="sec-2-2-量化验收指标-写进-README-逐条核销" data-page-node-id="t2AFUrnptrmVXFNtWNUa51">2.2 量化验收指标（写进 README，逐条核销）</h2>
+<h3 id="sec-A-Agent-能力-100-条测试指令集" data-page-node-id="29QeAyA3hiAfQsqi0O1Gr7">A. Agent 能力（≥100 条测试指令集）</h3>
+<table data-page-node-id="xiC674olkmCuuvvY7DuJa7">
+<thead data-page-node-id="yyEsvtdqW2qQ2DQTjCbBBd">
+<tr data-page-node-id="KOujXpJwbyGPTKaMyJmzvQ">
+<th data-page-node-id="ZLByJ37DJ6SB1ifQynY20g">指标</th>
+<th style="text-align: right;" data-page-node-id="mmR4efrGVypeAB1dphoc0e">目标值</th>
+<th data-page-node-id="pDolXfueYY6LSP5YYFLfkL">测量方式</th>
+</tr>
+</thead>
+<tbody data-page-node-id="6ZegPynx5zOAWCloIFrozn">
+<tr data-page-node-id="aiYkQyaLCFaNNzaETA1CqD">
+<td data-page-node-id="wxempuAiotmmnf4hIPiNHV">Tool Selection（工具选择准确率）</td>
+<td style="text-align: right;" data-page-node-id="EIM2w7TVUCcraNyDjA0T3N"><strong data-page-node-id="IIuPeU63eKUoPFQV17mA3G">≥ 95%</strong></td>
+<td data-page-node-id="pgK8oAiQpLOs0QXWAntr7r">100 条指令，人工标注期望工具集，比对</td>
+</tr>
+<tr data-page-node-id="TjdhpyEWMYKLhg0QwLXzTT">
+<td data-page-node-id="TL810DDqfCToAXtWivEROK">DAG Order（依赖顺序正确率）</td>
+<td style="text-align: right;" data-page-node-id="D4mF42bP9qNGvNQlY11qVt"><strong data-page-node-id="4v6HLS1ZjPgNrM8HQluwOZ">≥ 95%</strong></td>
+<td data-page-node-id="YRSaZUiIwBNgRmSTLCt8SW">拓扑排序正确性 + 必要依赖不缺失</td>
+</tr>
+<tr data-page-node-id="9hNJNdgXCSv4zyleYtb5fR">
+<td data-page-node-id="CmzHZE0eNTRI1jBr2xJLtQ">Parameter（参数解析准确率）</td>
+<td style="text-align: right;" data-page-node-id="T2iPhajLJyHIoWxkQDFuCc"><strong data-page-node-id="ojBCy2plDiR4K0W9rmlgBB">≥ 90%</strong></td>
+<td data-page-node-id="rZiFKPfOnXgNzlbe2I4fHL">关键参数（风格、光向、强度、区域）抽取正确</td>
+</tr>
+<tr data-page-node-id="fG3Qmi4ysv8dg0j0hbUPY6">
+<td data-page-node-id="CwbXzBK5AhGZuIlGA3o9gJ">Spatial Reference（空间指代准确率）</td>
+<td style="text-align: right;" data-page-node-id="FyWvUOpg9p07l54z8Lko2h"><strong data-page-node-id="tLmmKfge9SbZK8zWgOeNqP">≥ 80%</strong></td>
+<td data-page-node-id="t8BHizbOcAQn7ilUXzCw5Y">点击/框选坐标 + 语音"左边/这里"联合消解</td>
+</tr>
+<tr data-page-node-id="BbhEVkxoINd1lLniaxckme">
+<td data-page-node-id="LYH8nNauzzrwTBEwR7uHoH">计划生成延迟</td>
+<td style="text-align: right;" data-page-node-id="ajQxtxfgusgdkJF4aqoWfE"><strong data-page-node-id="Ec89r2kHGf0n0LoM8l74KP">≤ 3 s</strong></td>
+<td data-page-node-id="Jt3B2OptuKSbslL5GqlcK9">语音结束到 Plan 展示</td>
+</tr>
+<tr data-page-node-id="EQa97tSAbCYTdWw0ndPwV0">
+<td data-page-node-id="usneEfrPpdZvdkBTQr3IiO">端到端出图（草稿级）</td>
+<td style="text-align: right;" data-page-node-id="hAibBhDsMhkR14DmZDasAi"><strong data-page-node-id="2NWvhH8gE71ZzO3yGhYz9r">≤ 10 s</strong></td>
+<td data-page-node-id="9FUNZZAk72xad61kuCWm7Q">语音结束到首张结果图</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sec-B-抠取算法" data-page-node-id="hCryxCHRnaWNw6zNhmyKfd">B. 抠取算法</h3>
+<table data-page-node-id="2dDgItA31I446tuY2CWbNI">
+<thead data-page-node-id="b2Aaj452gBYmFv1kzPBlni">
+<tr data-page-node-id="w5tAQZreS21JPNfkDs6Ess">
+<th data-page-node-id="jQpZCYpAjmUpBkGk9TiaPC">指标</th>
+<th data-page-node-id="Px3ckeFHGanpR1wcnK3YEH">要求</th>
+</tr>
+</thead>
+<tbody data-page-node-id="Sqs09I7eICmAHpPasf5P8q">
+<tr data-page-node-id="n2kielQxAqmA6gm0hoTt3D">
+<td data-page-node-id="PIMlIEmsyaVcM3D5ULyPwh">Baseline（BiRefNet / SAM 2 组合）</td>
+<td data-page-node-id="a9swqCg2xYUjFwue3q4iUS">必须给出 SAD / MSE / Grad / Conn 四项数值</td>
+</tr>
+<tr data-page-node-id="pyPC606f6CJf6mAvuf5GUa">
+<td data-page-node-id="Uew9h30soXMNoRLdJ0fwdj">Fine-tuned</td>
+<td data-page-node-id="I0coGc2J3QNVhS2yTJbUEM">同四项数值 + 相对 baseline 提升幅度</td>
+</tr>
+<tr data-page-node-id="5XqViHySSmdHLbRPpO1BJr">
+<td data-page-node-id="gzSnTxM9rQflJiUxYaeevu">目标（建议口径）</td>
+<td data-page-node-id="GBbt5nW33qdXz2fCCCoWQC">整体 SAD 相对 baseline <strong data-page-node-id="CYRHmwlrb7rhjTLriqhdXr">下降 ≥ 10%</strong>；难例子集（透明/半透明）<strong data-page-node-id="cgdzgJFk5XZcWDgghk91QR">下降 ≥ 15%</strong></td>
+</tr>
+<tr data-page-node-id="rUdFrcgcM80c0BLAtmTdzB">
+<td data-page-node-id="NmlfpVdKi8HU2gUjWmw9bv">难例集</td>
+<td data-page-node-id="GOPomw4p1Rci3NW6irUAnv">§1.3 E1 七类，每类达标数量 + 单类指标</td>
+</tr>
+<tr data-page-node-id="K0FTzBKoXMzBKpEjvztE9c">
+<td data-page-node-id="ur61QqEkICYmfLZ8Dpzagu">视觉对比</td>
+<td data-page-node-id="Wncm8Cj9e5b1nVA1FdHFXi">≥ 20 组 before/after 对比图</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sec-C-光影一致性" data-page-node-id="Hi8DyL8XDg0KwDh7qBSK0R">C. 光影一致性</h3>
+<p data-page-node-id="ONOWCX9Brn0gF3kJsGawyp">四组必做实验：</p>
+<table data-page-node-id="9Mfc6K0GahXnkvdryXOR9a">
+<thead data-page-node-id="CaSQKAjvRwpEJGdFR3OBE6">
+<tr data-page-node-id="iPJ0ya23HH3ClbuC169DKk">
+<th data-page-node-id="uzg8B5QdM9SgzjAr7zZQzh">组</th>
+<th data-page-node-id="1NZcLLFIpFv1Z4sjqvb1c4">配置</th>
+</tr>
+</thead>
+<tbody data-page-node-id="Q09pl5oZNFjXisG1JV9jQc">
+<tr data-page-node-id="eEDECmI3oGdZLGJXp4c1X1">
+<td data-page-node-id="gTwfYtCdv9oH6iYXBqG7s7"><strong data-page-node-id="7VIEx8dUtT9qhMgdCzFmFb">A</strong></td>
+<td data-page-node-id="jm9nS45pxwOvniyNlVdQex">Direct Composite（直接合成）</td>
+</tr>
+<tr data-page-node-id="KkYpBtcxoiFwVX7JDNYEHE">
+<td data-page-node-id="zvh3dFe9iaZ5ueZmJ9GlYA"><strong data-page-node-id="Ytx2mhTV4UrsCxsiRnI0gb">B</strong></td>
+<td data-page-node-id="RLnCHZV35d0Q6tEtHwCJe2">Composite + Harmonization</td>
+</tr>
+<tr data-page-node-id="Ilb3RUGIPYJFLZuXRlNZcB">
+<td data-page-node-id="OrwoJ2BeGydOdqYa803OtC"><strong data-page-node-id="F3IO62DIE7QCbGINEpPGaW">C</strong></td>
+<td data-page-node-id="iJU7NuUcCnA5pIKNZQ22Mw">Composite + Relighting</td>
+</tr>
+<tr data-page-node-id="VD3JO5sQV4AXFEiD2pgxFS">
+<td data-page-node-id="BoaFVHCLuvEJqHaHqU1yKl"><strong data-page-node-id="PwOGJ39qlTihqgcHfPrtv6">D（Ours）</strong></td>
+<td data-page-node-id="LnrVCsL1KIbiMzZQusQZjC">Composite + Relighting + Shadow + Harmonization</td>
+</tr>
+</tbody>
+</table>
+<p data-page-node-id="FeAXBReMEUaI3fw9NYHyza">评价维度：<strong data-page-node-id="6TktlvWTn2ekfwXOpcMZZs">光照一致性 / 阴影一致性 / 色彩一致性 / 整体自然度</strong>（5 分制，双盲）。
+目标：D 组整体自然度 <strong data-page-node-id="L9JbYDKrEddu4CTjkGqVKG">≥ 4.0</strong>，且相对 A 组 <strong data-page-node-id="uwpcEa3SEwrL4ZiU36YYw4">提升 ≥ 0.5 分</strong>。
+案例量：<strong data-page-node-id="NwFaj5EX2UaDMgCPkuZU7w">20–50 组代表性案例</strong>，含 ≥ 5 组失败案例分析。</p>
+<h3 id="sec-D-Critic-可信度" data-page-node-id="Uop5ggVm9gzopfiniLMCPC">D. Critic 可信度</h3>
+<table data-page-node-id="ejJq7Rupl16kI4ewCF2e2f">
+<thead data-page-node-id="vY7Ek67sCLA4eA7LdGcAAw">
+<tr data-page-node-id="s97VmdnuDCAD1l4GjMWMlb">
+<th data-page-node-id="wMwelf4c8jyJvtFFazPs0o">指标</th>
+<th data-page-node-id="y6ZeOJqxmHv0UtA5CfrRYL">目标</th>
+</tr>
+</thead>
+<tbody data-page-node-id="R3spBbluw9WMiWRGe26fW0">
+<tr data-page-node-id="0RgNDvF1FGjVNc6BcVJBDV">
+<td data-page-node-id="TGtgHM6pPbPaaPjqFr4rVm">Critic 打分与人工主观分的 Spearman 相关系数</td>
+<td data-page-node-id="TN15Yo9deqBLbzfjaFA4EA"><strong data-page-node-id="7z2W47ETKtqFJ8708oXrtx">≥ 0.6</strong></td>
+</tr>
+<tr data-page-node-id="rp7Eq4Fi6wm4vruroBGktI">
+<td data-page-node-id="hVetWO6DBPQMVqrmcFQce7">自动修正成功率（触发修正后指标提升的比例）</td>
+<td data-page-node-id="yeg9EOS5JZeTpchoLmbWzq"><strong data-page-node-id="cPuaPdj6XiwpfmIgB2SViR">≥ 70%</strong></td>
+</tr>
+<tr data-page-node-id="PbW3MShyoEv5wkpj7gYpvw">
+<td data-page-node-id="vdxN6cP2XtNWTVjNAaVARn">误触发率（人工认为无需修正却触发）</td>
+<td data-page-node-id="AevC1VDaYmdLqbHUpa8Gha"><strong data-page-node-id="iBLpocdxPWsIB4wXCiPfCA">≤ 20%</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="sec-E-系统性能与交互" data-page-node-id="pFF6KAz3IY0qDcMCLoLOgf">E. 系统性能与交互</h3>
+<table data-page-node-id="CBlqCvomCCk2RLXAfnVDpV">
+<thead data-page-node-id="4QLTytpau7v6A5a4ISaCFu">
+<tr data-page-node-id="vQ9qLI4DnSSzOWcnL3Ym46">
+<th data-page-node-id="fCUVZxFuPzVm3UlTHQKrjx">指标</th>
+<th data-page-node-id="Qjun0ggA5wNKl1HNTVZ7N1">目标</th>
+</tr>
+</thead>
+<tbody data-page-node-id="l7K4GtddzcufwCWRLzGMc8">
+<tr data-page-node-id="Pd5DxRfvINATx87kyZZjyv">
+<td data-page-node-id="G5yUAj7hHziFh7j3CacU4M">ASR 中文识别（安静环境字准）</td>
+<td data-page-node-id="hhsbHsfjNJ1oT5kqb581Fb">≥ 95%</td>
+</tr>
+<tr data-page-node-id="qn5UhDxncvlfiFcUMEAumk">
+<td data-page-node-id="zvR9zQjbLl65ayfElyn2Hj">ASR 端到端延迟（含 VAD）</td>
+<td data-page-node-id="MWCrfzrAZzHnLal2z8n0kg">≤ 800 ms</td>
+</tr>
+<tr data-page-node-id="epsBj1qbU7RCb1QOLrlw8c">
+<td data-page-node-id="8aFWWmzqOzuhjXGMjfLMCL">5 轮连续编辑不崩溃、状态不丢失</td>
+<td data-page-node-id="DxhtR7wERtYphNNsdook7L">100% 通过</td>
+</tr>
+<tr data-page-node-id="HuxDbQrm6VNOsrTzylVpwy">
+<td data-page-node-id="ZMZqyolSpG5etyCYQogQDh">条件回滚（"换回背景 A，保留现在的光"）</td>
+<td data-page-node-id="NZN5OW6hhp9WwVCxkHxIuR">100% 通过，且后续节点自动重跑</td>
+</tr>
+<tr data-page-node-id="v5w4TigujBf1CnJmjJPMjq">
+<td data-page-node-id="g7xFHORufdqyTlufZoTyVi">精修级出图延迟</td>
+<td data-page-node-id="KGxUKKyKtQJYhfyaHf49ib">≤ 30 s</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sec-2-3-成果包清单-10-10-交付-17-项" data-page-node-id="DajmFZIoHvonWICJbkZQ9c">2.3 成果包清单（10-10 交付，17 项）</h2>
+<pre data-page-node-id="SqcA6gD4d29KkX5btAwXTj"><code class="language-text" data-page-node-id="t0CuiaMS4FZuKINbqJEElI">01  可运行系统（Web + Agent + AI Service 一键启动）
+02  Agent 服务源码（Planner / Executor / Critic / DAG / Rollback）
+03  图像工具链源码（T01–T08）
+04  微调模型权重（含 Model Registry 记录）
+05  Docker 环境（推理镜像 + 训练镜像）
+06  API 文档（OpenAPI / Markdown）
+07  数据集说明（来源、规模、划分、授权）
+08  训练配置（全部 config.yaml）
+09  实验指标（eval.csv + metrics.json）
+10  Baseline 对比表（抠取 + 光影）
+11  视觉对比图（≥20 组抠取 + 20–50 组光影）
+12  失败案例分析（≥5 组）
+13  用户测试结果（n ≥ 10，含原始问卷）
+14  Demo 视频（3 分钟）
+15  技术报告（含完整实验记录）
+16  答辩 PPT
+17  Git 仓库（含完整提交历史与 README）
+</code></pre>
+<h2 id="sec-2-4-三条生死线" data-page-node-id="3F4ZfHimMoF7FhsRt22FHj">2.4 三条生死线</h2>
+<table data-page-node-id="BdiYCuDiWplWSY0ITfFTcr">
+<thead data-page-node-id="ZxkDDmGTRwBs1XFApnmOLY">
+<tr data-page-node-id="ExqGxCpvvLIuEPz36DR8HC">
+<th data-page-node-id="qH6LHMN1B1OobUZuiPPWq1">日期</th>
+<th data-page-node-id="rfhB7Ng26pN4A4yTjFHH03">必须达到的状态</th>
+<th data-page-node-id="hBfILOOUjtjKcqEszE7ZzX">没达标的后果</th>
+</tr>
+</thead>
+<tbody data-page-node-id="LLcFhv0sKFWRdyd0JHIXti">
+<tr data-page-node-id="lZpdlm4S3RTpUIFJ3EmHEl">
+<td data-page-node-id="chzUgGy3SYd5SQki5cDFC9"><strong data-page-node-id="txARt21esLHylm5FVGHHjc">09-15</strong></td>
+<td data-page-node-id="Q6wgIg70HRxmA8FflYwneL">训练模型 + Baseline + 指标表 + 视觉对比图</td>
+<td data-page-node-id="0Ao9gPFnhJKA9ohuxJ5G0J">项目退化为纯工程 Demo，学术价值归零</td>
+</tr>
+<tr data-page-node-id="N6InZhC4ExVukmHMcW0oMs">
+<td data-page-node-id="AhLGlIE59ERLWFN14GDMXh"><strong data-page-node-id="2THsREo9axozDt4ElpQ0QD">09-20</strong></td>
+<td data-page-node-id="yuxWEbuzijpb9oE5pucerB">语音 → Agent → DAG → 工具 → 图像 完整跑通</td>
+<td data-page-node-id="44BnS5tpg6IDxO7tQWIJoK">交互创新点无法验证</td>
+</tr>
+<tr data-page-node-id="GNl54dYGR61EMOPr3jH4MM">
+<td data-page-node-id="Og1n5MupOLjxBOaCIIkc3o"><strong data-page-node-id="fxFEPkLq2mGFc9kCKQiQcd">09-30</strong></td>
+<td data-page-node-id="uGOjiGm5a6qnfxOS47LxIB">系统封版 + 实验完成 + 录屏完成 + 用户测试完成</td>
+<td data-page-node-id="tEVyNtmCkZMQbuahHKW7mA">10-08 后无缓冲，交付风险极高</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sec-2-5-阶段性效果对照表" data-page-node-id="wwhqzXHgAXsbVlG4aR3fnf">2.5 阶段性效果对照表</h2>
+<table data-page-node-id="bZmmr6J0a9jFZvNCt9QXjr">
+<thead data-page-node-id="AMd1AJDNW6Z3jCEGwYLDsw">
+<tr data-page-node-id="JUqY3Z5LEkQFqr1iEb62Tj">
+<th data-page-node-id="6X6XxdvLY5l7LMt6Ck62kz">阶段</th>
+<th data-page-node-id="yGxCCbnE8hrRrpW5XylvQw">日期</th>
+<th data-page-node-id="qZTrM2lZqNkSNzwTSBKLs5">阶段末必须能演示什么</th>
+<th data-page-node-id="16yRHNaVIxyOfrgK43MkHb">不能演示就说明什么</th>
+</tr>
+</thead>
+<tbody data-page-node-id="ES3KnLYV2DJkHVlRKfJC2Z">
+<tr data-page-node-id="nmcaMITvA7qZ9KoReMrQ3D">
+<td data-page-node-id="VHMwQGr8t57gfHBluVhdAS">W1 冻结</td>
+<td data-page-node-id="mHbH350VNQ155WNAaWZLJl">09-08 ~ 09-09</td>
+<td data-page-node-id="8J1wmJ7W21mPvTiR6d3P03">单张图跑通 BiRefNet 抠图并看到 alpha 图；8 个工具 Schema 全部提交</td>
+<td data-page-node-id="XbkTOfrNxux5HgDZDWsOJI">环境 / 数据未就绪，全员阻塞</td>
+</tr>
+<tr data-page-node-id="CwU8VyWgNKfEJj1WUPm4I9">
+<td data-page-node-id="Wav3SJWtw3YMtp0U3FNLAT">W2 训练</td>
+<td data-page-node-id="ybyV9vu2tDetHpUEr2NGGV">09-10 ~ 09-12</td>
+<td data-page-node-id="2dnLfczhSKKPsl4S0bwY43">第一次正式训练启动并产出 checkpoint</td>
+<td data-page-node-id="oz20ayGplycwiqcLxnZPuk">训练链路不通，后面全盘延后</td>
+</tr>
+<tr data-page-node-id="mRrcBsA9IJAR9ytHe6ac6Y">
+<td data-page-node-id="A0RPHKyDpqqvp0fCCWWy6j"><strong data-page-node-id="Cq9n6UoAS3ezbMQscMYP8u">W2 成果</strong></td>
+<td data-page-node-id="37cB34EImnNF6NYk1HUYXA"><strong data-page-node-id="abg2WsorWHELvT6FsF8LsJ">09-15</strong></td>
+<td data-page-node-id="I54hLysYjM8yqX6lD4WX3f"><strong data-page-node-id="lu9HqAaTkWkr55jBTh6KlO">抠取微调前后对比表 + 对比图</strong></td>
+<td data-page-node-id="7xlOqV6CauoKssQQdhWxbl"><strong data-page-node-id="wyFZ2x1QK7vgIZOSofDCX1">生死线 1</strong></td>
+</tr>
+<tr data-page-node-id="u113cKUDCuPnThaqogyDWT">
+<td data-page-node-id="a2drt3YoMl55KORLn5SccI">W3 贯通</td>
+<td data-page-node-id="fWVUPCsGGWDNH2LMDOgGFR">09-16 ~ 09-20</td>
+<td data-page-node-id="jCvn9FlCxLSYnFdr58qBrM">说一句话 → 出图（功能可以不完美，链路必须通）</td>
+<td data-page-node-id="ftUu8T4r1Ac3uFy07Pj1Fj"><strong data-page-node-id="BkrMkl7cCEvUEHMVvPOr14">生死线 2</strong></td>
+</tr>
+<tr data-page-node-id="zO8Js6COozH1HBofpxlBkM">
+<td data-page-node-id="wiouExNhf5VOa79SJuuCRt">W4 智能</td>
+<td data-page-node-id="K16FO386tbvFDZJyR9UyP9">09-21 ~ 09-25</td>
+<td data-page-node-id="QaxDX1suWioStVSgAn3yIU">Critic 自动发现问题并修正；5 轮多轮；条件回滚</td>
+<td data-page-node-id="RXi3zQpEFk9qbx5Ez02aI4">Agent 研究点落空</td>
+</tr>
+<tr data-page-node-id="LWY5K5m90rzdcz4FhIoNZe">
+<td data-page-node-id="VHc5B7XqWt2DkiuSQi7gzL">W5 评测</td>
+<td data-page-node-id="mi4AH046pGrG4pEJzOsSRs">09-26 ~ 09-29</td>
+<td data-page-node-id="1YKyoPJb1zKzTjlRo67jSq">四组光影实验完成 + 用户研究 n≥10 完成</td>
+<td data-page-node-id="nSpnDDG5ZxSwZm0mWTe9Y2">无量化证据</td>
+</tr>
+<tr data-page-node-id="OEx9oyHGtfehOKrTPQ3S9E">
+<td data-page-node-id="57kepu9xFKUGN2HLfkYJxu"><strong data-page-node-id="Blz0OCwe3CCQPHFTGMT488">W5 封版</strong></td>
+<td data-page-node-id="eWwuTvpXgw6Foe5sbHKmwY"><strong data-page-node-id="1MpKuNMeg5nmplDIhAM1ET">09-30</strong></td>
+<td data-page-node-id="TeAqky8QI9vKfcVxXDyQ8m"><strong data-page-node-id="vH7ZJGuBLgOfqotnmlP92R">完整 Demo 录屏成功</strong></td>
+<td data-page-node-id="3q07hedPTMLM6lwcYpUiNQ"><strong data-page-node-id="C7eAfnbxWOVjRJJ1DAwLIo">生死线 3</strong></td>
+</tr>
+<tr data-page-node-id="KYYGbQgJGuXRHMdQwIBrnp">
+<td data-page-node-id="dgramhCafQlAzeZYbrF47P">W6 交付</td>
+<td data-page-node-id="Ik5UABUltsMy9uaJFiLPAq">10-08 ~ 10-10</td>
+<td data-page-node-id="qj7URkKTK8dT23jzlz3sGt">报告 + PPT + 视频 + 仓库归档</td>
+<td data-page-node-id="oo5g1xbF8FsLahVTh8wAFw">—</td>
+</tr>
+</tbody>
+</table>
+<hr  data-page-node-id="ay18iHanfDfHqqYCzVudyn"/>
+<h1 id="sec-三-任务清单-WBS" data-page-node-id="iCRz9SYJTly64kZnUCb2i0">三、任务清单（WBS）</h1>
+<blockquote data-page-node-id="g5R0nLTwfdCHY5uCgPqFAm">
+<p data-page-node-id="WsIJOCPGGJCGSmaDtHzSUX"><strong data-page-node-id="ebkmx5u8TgNDUpg6BGfDEj">认领规则</strong>：每个任务必须有且仅有一个 Owner。跨组依赖在任务卡"依赖"列标明，依赖方负责催办，不是等。
+完整可勾选版本见 <code data-page-node-id="hCQ17N5ei8tJl4mVEBqbfj">任务看板_认领表_V1.0.md</code>。
+优先级：<strong data-page-node-id="qgwKcg9Cfh3Cq8WbySx7uH">P0 = 不做项目失败；P1 = 不做验收扣分；P2 = 有余力再做。</strong></p>
+</blockquote>
+<h2 id="sec-3-1-A-组-Agent-后端-系统集成" data-page-node-id="ZbVJYglq12mmeYpU1DBkxr">3.1 A 组：Agent / 后端 / 系统集成</h2>
+<p data-page-node-id="KY2zgdAG8C9KOrBFSqBCDJ"><strong data-page-node-id="Z5CYZOVIHWRNeFVMnbRSvJ">Owner 核心责任</strong>：Planner、Executor、Critic、DAG、Rollback、API、任务队列、系统集成、部署。</p>
+<table data-page-node-id="wnAHLc4282M3WcX8CYFOHn">
+<thead data-page-node-id="e4koeQJHuuTJ7zoInSnnxJ">
+<tr data-page-node-id="GMwAHboYo3oLvgqCc1jAeP">
+<th data-page-node-id="SaIv8FD7RQlYTl63fKDGx5">WBS</th>
+<th data-page-node-id="kKY254fcp2DpUgEMHHDnJO">任务</th>
+<th data-page-node-id="LLStPV5P36PTuhwbY3ZW7A">交付物</th>
+<th data-page-node-id="qS0hmFtD7dU1sGeBq2oLyb">验收标准</th>
+<th data-page-node-id="EiUW3snnhkBzj8ZLzpQGK0">截止</th>
+<th data-page-node-id="A5iKcI5roj7vdK79iO6ueM">优先级</th>
+</tr>
+</thead>
+<tbody data-page-node-id="B8Mk8JYnDYT4OusKLbrd8e">
+<tr data-page-node-id="BM5Jzu5NabQVxhwfaJIH4i">
+<td data-page-node-id="V7qSrsOL3pSfQCowI2cFSB"><strong data-page-node-id="nJ8tLC2hbPVRPYelE6Clbj">A1</strong></td>
+<td data-page-node-id="DSB6Bvni3D8EcqsZiNEtJu">8 个原子工具接口定义</td>
+<td data-page-node-id="tEcuxHMiSHvKGRFtA5oRc5"><code data-page-node-id="fat12GElxi5ffM1GAlDHjG">agent/schema/T01–T08.json</code>（含 input/output/error/latency 四件套）</td>
+<td data-page-node-id="j3zVqQpcGeI51uixWI8UNA">8 个 Schema 全部评审通过；能被 B 组按 Schema 直接实现</td>
+<td data-page-node-id="HTv50NytF5VFL1ZRXvgTFE">09-09</td>
+<td data-page-node-id="WddyZY5jGljdb8a160wuVb">P0</td>
+</tr>
+<tr data-page-node-id="ut46fdCDK2Yi2lbwFJn2Oy">
+<td data-page-node-id="py3U3M3jtz6pKCdxYOKYq9"><strong data-page-node-id="N23xn3kjj39Uf5bq7IEtr9">A2</strong></td>
+<td data-page-node-id="SekPqwFvcLmBCM9FNURUo9">Planner（指令 → JSON DAG）</td>
+<td data-page-node-id="NeAnAE73A9Q9EyizNRUe6z"><code data-page-node-id="LNaJt3q1RbVOavCpt07woD">agent/planner/</code> + prompt + few-shot 示例</td>
+<td data-page-node-id="Wb0MQ7VogjmGYPyUwmtSPX">100 条测试集上 Tool Selection ≥95%、DAG Order ≥95%、Parameter ≥90%</td>
+<td data-page-node-id="wjq0UKLOAjGFKtLlWxLVqo">09-18</td>
+<td data-page-node-id="c9sbXQlEpZry61UG02xHGb">P0</td>
+</tr>
+<tr data-page-node-id="Eu1aJiUOIS8hQiqF40D61F">
+<td data-page-node-id="c5oZ2sTJRa1r93W93yi9pM"><strong data-page-node-id="i9HHExtmGVCRcRM2Ftvkwk">A3</strong></td>
+<td data-page-node-id="7iwJ3DQZNJXRtEXCQYACL9">Executor（DAG 执行引擎）</td>
+<td data-page-node-id="uYXqDn8pFOYRpcDQzkMVgK"><code data-page-node-id="8XAP7RQ0omr6Vx63wrSG0Q">agent/executor/</code></td>
+<td data-page-node-id="BQk8kx7GNZJsB70So5Xokm">支持 Run / Pause / Resume / Retry / Skip / Re-run；单节点失败可重试且不影响已完成节点</td>
+<td data-page-node-id="z9iYpgEIQYGORCn8dzTVxW">09-16</td>
+<td data-page-node-id="OlBxDveSvR95jcJDK6Pe8C">P0</td>
+</tr>
+<tr data-page-node-id="A64ORQsBelFDM18qF4STFe">
+<td data-page-node-id="d4SGelmlaPSiUDDqgNSHSu"><strong data-page-node-id="yz1B7ypuCJLmuq975nacwI">A4</strong></td>
+<td data-page-node-id="Z706jUfZMWXKdpurkk8tNu">VLM Critic</td>
+<td data-page-node-id="NBOw6NqKhMeZxyCV7CE2Y8"><code data-page-node-id="S1sgsv9YFo5tA2QZCt1ZB3">agent/critic/</code> + 评分 rubric</td>
+<td data-page-node-id="a5F7sqz1WweiacNLocEJDT">五维打分（Lighting/Shadow/Color/Edge/Overall）；与人工分 Spearman ≥0.6；能定位最低分维度</td>
+<td data-page-node-id="ZWfVrYuuNu69I8HJZld6Ol">09-23</td>
+<td data-page-node-id="Ia1Lq6RtGvYkTMHGomMNpM">P0</td>
+</tr>
+<tr data-page-node-id="0rbEkuiB9GKIqIPwfqPMZW">
+<td data-page-node-id="DfTVzs1JDUqcFjEr4A6cib"><strong data-page-node-id="NTMkI1eEvcJ8KYClGvSXEc">A5</strong></td>
+<td data-page-node-id="tVtCZ8fMA47PthEQOVnd4D">版本 / DAG / 条件回滚</td>
+<td data-page-node-id="QGtBN4vag7XGrwM0GctURY"><code data-page-node-id="RmOCtvjIIlyiGUwPzfzkBF">agent/rollback/</code> + 状态树</td>
+<td data-page-node-id="pm14dTKBJJDCpv5E1JPegf">"换回背景 A 但保留现在的光" 场景 100% 通过，后续节点自动重跑</td>
+<td data-page-node-id="KOfWPIJo30YiKI86RB1cFL">09-25</td>
+<td data-page-node-id="rs7ceBwCf1ssZfMWFHyR4Z">P0</td>
+</tr>
+<tr data-page-node-id="qpIYKAriBqRZiwXGFPT4mo">
+<td data-page-node-id="V3D7KCAd7m4KATFDyKit5K"><strong data-page-node-id="TeRsXEUKWhrVErxI6jVFcW">A6</strong></td>
+<td data-page-node-id="kKLpXApNqgg5AA7e08nzZD">Backend API（Spring Boot）</td>
+<td data-page-node-id="OOzsrZTP20gLxvxe0TR5AW"><code data-page-node-id="ucFix94GKMGh8ol7PHuC6w">backend/springboot/</code></td>
+<td data-page-node-id="yZNvmIWP1oREWtJbynW52S">用户/项目/任务/产物四类接口；OpenAPI 文档；Flyway 迁移脚本</td>
+<td data-page-node-id="aRhLh6Zaz9BjgsdzNghJ0U">09-22</td>
+<td data-page-node-id="aCTnRNlzV3SlFohwKwkoMA">P1</td>
+</tr>
+<tr data-page-node-id="2ifGBSQ8L4YFcJAjZjW0JB">
+<td data-page-node-id="mS8yFNvDXQ9XiyVNMnOe4i"><strong data-page-node-id="66JQndzkfrYoMVReLFv49Z">A7</strong></td>
+<td data-page-node-id="GAasRaWW4F4E8MX9UCHOvE">异步任务队列</td>
+<td data-page-node-id="wneOtC1IPUQeMQGclWUBDZ">Job Queue + 状态轮询 / WebSocket 推送</td>
+<td data-page-node-id="LjTMQLsSigHTMPOGT23jsx">长任务不阻塞；前端能实时看到节点状态</td>
+<td data-page-node-id="2hLF6KI7nYpnChB9ooNJju">09-20</td>
+<td data-page-node-id="FIX2iSahJH2vA0O6bz9kQv">P1</td>
+</tr>
+<tr data-page-node-id="2FGKxuBp7bzq27MQzxQeF0">
+<td data-page-node-id="uk8OxS1DuNjO73Cm6LcT4L"><strong data-page-node-id="eBhYiEqq5RaMGnhnA6KcBR">A8</strong></td>
+<td data-page-node-id="I8LHgunjnsjkWIFBuuzoBf">评测与日志体系</td>
+<td data-page-node-id="Runjv6A42zVouxPK08DmG1"><code data-page-node-id="jfr2eUpjBcEBFXhca5ByZG">agent/eval/</code> + 结构化日志</td>
+<td data-page-node-id="Alr5ZFYPVUvxrxeSsEnArv">每次运行可回放（输入、DAG、各节点产物、Critic 分数、耗时）</td>
+<td data-page-node-id="i7OCieypFqP0kwqlvzXQ96">09-26</td>
+<td data-page-node-id="l4qZqPBt4um9ML5j6woZFl">P1</td>
+</tr>
+<tr data-page-node-id="HCcTig6rR51tryV4BIQ6Xp">
+<td data-page-node-id="5UEGJYk7GFeXw4sIXvzIev"><strong data-page-node-id="FuqozKYA1hT6Xjie4g5FHs">A9</strong></td>
+<td data-page-node-id="lrW96bGHiwIyOKtFndyDRb">部署（Docker Compose 一键启动）</td>
+<td data-page-node-id="6PF6rANhgswBh2L9S4iCpn"><code data-page-node-id="wKPCAVESs8pZqIHDEMNjju">docker-compose.yml</code> + 部署文档</td>
+<td data-page-node-id="CxCEyZguwGqbirOiwlHrCe">新机器 15 分钟内启动完整系统</td>
+<td data-page-node-id="3uT2sgNA903J4f6JbdGP9d">09-29</td>
+<td data-page-node-id="k976fe8CzIgiKD2Ff8ulaV">P1</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sec-A1-详解-8-个原子工具-固定-不得随意扩张" data-page-node-id="Ebb2EBt6G6ZN1GwTW6wzJC">A1 详解：8 个原子工具（固定，不得随意扩张）</h3>
+<table data-page-node-id="SQa3NWrQF7YjzGsRQV8xQj">
+<thead data-page-node-id="44d0VkVOmPnT1LxLNZt8GM">
+<tr data-page-node-id="Bfp6hMw4MBTePQDKLlIfNE">
+<th data-page-node-id="xYf1fWHIohHbSC90pE0j7k">ID</th>
+<th data-page-node-id="kwDWg9zzaSrjxoeoCUhBe7">工具</th>
+<th data-page-node-id="wMYyWdY7nNAYHIKEL8rGmc">作用</th>
+<th data-page-node-id="rRw1eaQucZ6g5NPlkPrQNM">关键输入</th>
+<th data-page-node-id="B2DZhjysqWFcdwd5vFSiGe">关键输出</th>
+</tr>
+</thead>
+<tbody data-page-node-id="pWCFyMPebIXjX7bZzjxP9x">
+<tr data-page-node-id="QjaLcYYxKY6VoZIaF4RoEJ">
+<td data-page-node-id="6bcBlCkBMJeZv3QjJoox4P">T01</td>
+<td data-page-node-id="31YsFU9MEH5tV95xlEZ15V"><code data-page-node-id="A7wj50oB2nkyCx1zuTch0b">matting</code></td>
+<td data-page-node-id="b1sHAs3z47aI3x3T4rYRTU">前景抠取</td>
+<td data-page-node-id="IKdDkO8AcFHIrNIDVua49G">image, [point/box prompt], mode(auto/trimap)</td>
+<td data-page-node-id="2vVRf6q2XASAx7ZUDvoYFy">rgba_png, alpha_png, mask_png</td>
+</tr>
+<tr data-page-node-id="0K4LmD4CdDfLNVZuW7UTS6">
+<td data-page-node-id="EB800MhqnjKgHuHtgEDsDq">T02</td>
+<td data-page-node-id="R4dUunUHp2FT6JeuHxaJSc"><code data-page-node-id="AVmSXGKB60Kn07yA8H0CnJ">background_generate</code></td>
+<td data-page-node-id="PZ5kk0AZvDBpRyKsTYXqkd">背景生成</td>
+<td data-page-node-id="NPp2PiuL8s3GlUmB5zAkf0">prompt, [ref_image], size, style</td>
+<td data-page-node-id="JDMRKnOyXH7Axj9W98q2kl">bg_png</td>
+</tr>
+<tr data-page-node-id="CDTD8FJDrKAqhsFfsGimhz">
+<td data-page-node-id="FEJHS0cEK3eRm4M0mtzbD7">T03</td>
+<td data-page-node-id="iJLtDtX74RCvpXAY0tj4FY"><code data-page-node-id="1fQPjzb1mvliMdRhYb7cCW">lighting_estimate</code></td>
+<td data-page-node-id="I1gyCfHjCfKmSF74y4ZEkt">环境光分析</td>
+<td data-page-node-id="eCFNE5ZWGT3BqCyJAJpcII">bg_png</td>
+<td data-page-node-id="eawTsz3Qor3SOQyHLBJdFj">sh_coeff(9), light_dir(θ,φ), color_temp, intensity</td>
+</tr>
+<tr data-page-node-id="B1MVBlvrdioRgkpiu3UUaA">
+<td data-page-node-id="5aHsVIIISR5pFl7DV9Ougg">T04</td>
+<td data-page-node-id="BZ7SaujKp1FVEUZ9ifkSEG"><code data-page-node-id="Fe8lKDgeUh6AsI5rOaF3AL">relight</code></td>
+<td data-page-node-id="l9XhuqGNIquWmfYX5SQ445">前景重打光</td>
+<td data-page-node-id="eXFt9DqglXFGOhjC8aCCkK">rgba_png, light_dir, color_temp, intensity</td>
+<td data-page-node-id="G1mZJGv3aNNY6nwTYVAPMX">relit_png</td>
+</tr>
+<tr data-page-node-id="D9uaS6JzmiSGVJMrCOLBuk">
+<td data-page-node-id="TmZ8vH5SreyqqkZnZXaAxj">T05</td>
+<td data-page-node-id="xCdgVVCRd6KWkSrL4s5bow"><code data-page-node-id="kwNMYWFkx1KqIjKauKm7Vv">shadow_generate</code></td>
+<td data-page-node-id="7RlKZDf42PsoZupk0PKRoB">接触阴影</td>
+<td data-page-node-id="0vgXMcweAqXAVgwUPXiei9">composite_png, mask_png, light_dir, geometry</td>
+<td data-page-node-id="yihPQhskpkMw4nCsOX2kSI">shadow_png, composited_png</td>
+</tr>
+<tr data-page-node-id="YV89j0fCrkkOp3V3cyVkSO">
+<td data-page-node-id="gxpkrixljaPKAJFQDMedGt">T06</td>
+<td data-page-node-id="7qHqIbQxyRpIxPikjrtGOn"><code data-page-node-id="9kJECIy3UWojWtE887YoDW">harmonize</code></td>
+<td data-page-node-id="ihan5GMjxc1ko8TRYLstel">前后景和谐化</td>
+<td data-page-node-id="kWhpIHeeAUJjaOVg48PILD">composite_png, mask_png</td>
+<td data-page-node-id="mimLmsc7clOTq1JmVdvs9O">harmonized_png</td>
+</tr>
+<tr data-page-node-id="smJn51fJM4ARPDX3zSeymE">
+<td data-page-node-id="k8GX3Ky2oRU0mdPmnkVjF8">T07</td>
+<td data-page-node-id="6ZN7R4IjF8CITOR3ADXd4e"><code data-page-node-id="UAhGEUFKNDvMhgXCrD6Heu">enhance</code></td>
+<td data-page-node-id="l5kzlruXYe5AAgQBCmFNQq">景深/噪点/细节增强</td>
+<td data-page-node-id="Iyues9pAd3zfqEPf5QcbF0">image, [depth_map], strength</td>
+<td data-page-node-id="h57Ege4YOHPGGewjs0sK8Z">enhanced_png</td>
+</tr>
+<tr data-page-node-id="ZfHNdR5ud5cA75DpFZ54Ir">
+<td data-page-node-id="IoFJjazpAODaYHhog0jiAX">T08</td>
+<td data-page-node-id="J8K9tId67heXpIevLh8JQW"><code data-page-node-id="Sjpwir4CrA6YZ6LWEh4Xf6">export</code></td>
+<td data-page-node-id="CdPpwQRCQso4DnO9ZtW0fo">最终输出</td>
+<td data-page-node-id="iPnyjISBubvem7KLeycpxR">image, format, [size]</td>
+<td data-page-node-id="4DCl5rwGXedAq9c7dIqhXc">file_url, meta</td>
+</tr>
+</tbody>
+</table>
+<blockquote data-page-node-id="t3GiLPBFo7YG4Smd9Y8lhq">
+<p data-page-node-id="B2xisGtFTEpoROX5zwdkPF"><strong data-page-node-id="Bib9Y1CEVttGFjFzNC3g0h">工具不宜超过 8 个。</strong> 每增加一个工具，Planner 准确率下降且测试集要同步扩，收益递减。</p>
+</blockquote>
+<h3 id="sec-A4-详解-Critic-决策逻辑" data-page-node-id="SEBiT42zMFwvyCd6Y9ziQW">A4 详解：Critic 决策逻辑</h3>
+<pre data-page-node-id="Cr7LKrkLyRxusVn9aBTV8q"><code class="language-text" data-page-node-id="nPXkOibuuRXWY9hZc3Cwzm">打分 → Overall ≥ Threshold ? → PASS → 输出
+                    ↓ no
+              找最低分维度 → 映射到对应 Tool → 重跑该节点及下游 → 重新评估
+              （最多重规划 2 次，第 3 次强制 PASS 并提示用户）
+</code></pre>
+<p data-page-node-id="jAL5Mv1dKnlm913b1ukqyI">维度到工具的映射（固定）：</p>
+<table data-page-node-id="SSIF0lKqTxyC4lffK12K9w">
+<thead data-page-node-id="XpM87EEoZWQURE6LlA036u">
+<tr data-page-node-id="vCAlqFqdtOFA7o2eh2EcYX">
+<th data-page-node-id="ch5kLTpXjuxdE6i6ocKKFx">最低维度</th>
+<th data-page-node-id="Z112siUCE1atkwk6V5yy1P">触发工具</th>
+</tr>
+</thead>
+<tbody data-page-node-id="V1LKLcjFREiH01idBUOfHE">
+<tr data-page-node-id="UGDajxvhfAENngO5EYuVkV">
+<td data-page-node-id="0pZMfZEaw7vklMcrVYwGrX">Lighting</td>
+<td data-page-node-id="bsTCkdnvqR9sBiiRFDBql8">T04 <code data-page-node-id="ZoLjAGgKgDLcezE3jUyica">relight</code></td>
+</tr>
+<tr data-page-node-id="g9V3J1oqzFpJw0IvaQu5Fi">
+<td data-page-node-id="0LjINa5bSpPVYlmYmPddeA">Shadow</td>
+<td data-page-node-id="DqBtE9n1oxV3sAgXUe4aa5">T05 <code data-page-node-id="EipOm5a1maNlERSWqnD2Oq">shadow_generate</code></td>
+</tr>
+<tr data-page-node-id="cCZEuuO8Cr4sNLKZWc5TwD">
+<td data-page-node-id="TydAGmmc5vY8C8d78BTwed">Color</td>
+<td data-page-node-id="CJ9BWFogQjm5jT3CVQwO3T">T06 <code data-page-node-id="kJDl1B1Y0N6CNpvPxMPGIG">harmonize</code></td>
+</tr>
+<tr data-page-node-id="FMKfdq5xh5fY6jDtaaafBi">
+<td data-page-node-id="ilve7Ki9xCxECvE49lGHVd">Edge</td>
+<td data-page-node-id="ryzMcZ7iuvF61etTBaQPuh">T01 <code data-page-node-id="Q6ZARJObNnK3xYm7XDgxJj">matting</code>（重抠，提高精度档位）</td>
+</tr>
+</tbody>
+</table>
+<p data-page-node-id="x3TO1ujBupeNDlRr8RysJ5">Threshold <strong data-page-node-id="xo5MwwowXFMsoG4oJDFNUP">先用 30 组样本人工标定</strong>，不得拍脑袋（见 §6.1 改进建议 1）。</p>
+<h2 id="sec-3-2-B-组-算法-训练-实验" data-page-node-id="aIaY23eGBzL8WLp4QT9cpy">3.2 B 组：算法 / 训练 / 实验</h2>
+<p data-page-node-id="1LxekmtDT1WJjjDCZ6GTnO"><strong data-page-node-id="Yhokn5wTOcNz5wCbo1vYua">Owner 核心责任</strong>：Matting、Fine-tuning、Lighting、Relighting、Shadow、Harmonization、Evaluation、Training。</p>
+<table data-page-node-id="c8bFVpbsKQDU5IuVK43u0t">
+<thead data-page-node-id="jT9wqh1HZTJMpCCafvkPF9">
+<tr data-page-node-id="nTYoPnfOn86EDeTXQwuBHU">
+<th data-page-node-id="5j7OahbTGUCAGxGl5pVlDh">WBS</th>
+<th data-page-node-id="XOMFSCoxsCKffmnGWtl9xE">任务</th>
+<th data-page-node-id="iZWP3lEKiN7Ik7rv1q97IA">交付物</th>
+<th data-page-node-id="J7fdQMSiJn2Fl9vBKViVO1">验收标准</th>
+<th data-page-node-id="22zMFMJTs3CZ4Bm1cYoGvT">截止</th>
+<th data-page-node-id="oUO3airBBXp4iu0aspddKF">优先级</th>
+</tr>
+</thead>
+<tbody data-page-node-id="sKK7rKQohISJtdmGvh0DmP">
+<tr data-page-node-id="SpOXcT2FDxSwL4LqmKjfr8">
+<td data-page-node-id="I0s0T0GxETLcN2hznudL7e"><strong data-page-node-id="GUT5Yv5cgyPlDgm1sMpy7v">B1</strong></td>
+<td data-page-node-id="cwXSEPNvmK6LcQ2LBSEuCh">环境与基线跑通</td>
+<td data-page-node-id="aTKLOYeoyAuNUyZcXv1094"><code data-page-node-id="L3AwOlQpVgQb1hulv5Xdje">experiments/baseline/</code> 首张 alpha 图 + 指标</td>
+<td data-page-node-id="PyTUCbDxjglKg3KusqSZIJ">BiRefNet 推理跑通；SAM 2 交互分割跑通；记录显存/耗时</td>
+<td data-page-node-id="8cre3NDf611ZBa9EvdLqm8">09-09</td>
+<td data-page-node-id="vcdxR14sNICdfmWLtgoKVj">P0</td>
+</tr>
+<tr data-page-node-id="4dm8PT4pF3HzCfgOnXlLFE">
+<td data-page-node-id="6HpmMVrALGde9RrTUQFffw"><strong data-page-node-id="kAep2GG3z52vh9pKBmdo78">B2</strong></td>
+<td data-page-node-id="LX5cWVCSBjSrEPwVAs8jiV">数据集与难例集构建</td>
+<td data-page-node-id="besSn6NiA1iIDIoT7ErIJG"><code data-page-node-id="n5OkXGGe4DjEWR81zAsPx3">data/matting/</code> 四集划分 + 难例清单</td>
+<td data-page-node-id="9l1gob8rGfVHubfMmwx2Fj">train/val/test 物理隔离；七类难例达标数量（§1.3 E1）</td>
+<td data-page-node-id="4yIRO67JBgVWO6pdoHznRp">09-09</td>
+<td data-page-node-id="xqBYRn4DiXszFKoY0gwRdB">P0</td>
+</tr>
+<tr data-page-node-id="TvrlVQTtewE85u4uvNr7cu">
+<td data-page-node-id="Q54RtFeg8D7OqJCxoqJRkA"><strong data-page-node-id="cnrFwsKyE8TryFacNG0oaA">B3</strong></td>
+<td data-page-node-id="IcxihkoLOzy6dxTP66j4kn">抠取域微调训练</td>
+<td data-page-node-id="AX3kCPbULm3O0EIqn0Y2Cl">checkpoints + config + log</td>
+<td data-page-node-id="fzSJeCnYgrUxBnoRFTmjbk">支持断点续训；单次 ≤24h；产出 best/last</td>
+<td data-page-node-id="CbXJFzcUou0XVO8LF11Fdj">09-12</td>
+<td data-page-node-id="88J0weWeSEwxYbVZYuSTTw">P0</td>
+</tr>
+<tr data-page-node-id="oRLG1oid0Sy5oHhFbbO7YS">
+<td data-page-node-id="tbX82P8k6b4Z0aNKJG4Mux"><strong data-page-node-id="DtLBFXYHCdiFE9jOG3h1vR">B4</strong></td>
+<td data-page-node-id="hgPuHnYK9HLKB707z0TEH0">抠取正式实验表</td>
+<td data-page-node-id="jB5oBYI5g8nacFluKk8hJT">SAD/MSE/Grad/Conn 对比表 + 视觉对比</td>
+<td data-page-node-id="TxLpTWmCt7XWdNev5RAOfW">Baseline vs Fine-tuned 完整四指标；≥20 组对比图；难例子集单独出数</td>
+<td data-page-node-id="zXhipnejiGe8v6KHjui0iD"><strong data-page-node-id="nGX8g2Z4z2ZmI4iXhzz1s0">09-15</strong></td>
+<td data-page-node-id="jN6SvNvSIHDqaFYbD0kG84">P0</td>
+</tr>
+<tr data-page-node-id="dFOpqqPAXCt5lKpFXvcge8">
+<td data-page-node-id="jPWrq0doNCPwnGD9sSBSc3"><strong data-page-node-id="LYdC2vm1SCrJAjKm00V9M3">B5</strong></td>
+<td data-page-node-id="BJVGh7AoaGljQ17aBWRTaX">光影一致性 Pipeline</td>
+<td data-page-node-id="geY9JoQPbRhF1PjFWuucZk"><code data-page-node-id="lCLjYI8fUPvO035tFyu4Mp">ai-service/</code> 下 lighting/relight/shadow/harmonize 串联</td>
+<td data-page-node-id="tnZPN6qADcmYMlGcEaYfVk">单张图跑通全链路，中间态可导出</td>
+<td data-page-node-id="dp1RXu0PL1OTVMYXJ8B0Th">09-20</td>
+<td data-page-node-id="2wJ4kYgVZfCiN2Fj779LAv">P0</td>
+</tr>
+<tr data-page-node-id="BRbjRkpvBvp95Dce48d7PR">
+<td data-page-node-id="53a5v4RYeU2x7DVYkxvtHt"><strong data-page-node-id="2JO5sqTiABar6PWdqidNBn">B6</strong></td>
+<td data-page-node-id="8qMiSvHT0YtlELJc9M867h">光影四组实验</td>
+<td data-page-node-id="2UhFzENpGeOUviqRd4L9cw">A/B/C/D 四组结果 + 20–50 组案例</td>
+<td data-page-node-id="WOkpprSUPPp6lDARzQmGqz">四组齐全；主观四维评分；D 组相对 A 组提升 ≥0.5 分</td>
+<td data-page-node-id="MoKIIH8nB3In5yjNvn5sZq">09-27</td>
+<td data-page-node-id="IpOv6kGKSeDk8V6XlSOCRD">P0</td>
+</tr>
+<tr data-page-node-id="ACt4Mo7dvISerABqKN36ra">
+<td data-page-node-id="tWA6HWmJtAoNcGgdGSWEUH"><strong data-page-node-id="oAfNlSD8LZu7Bz6nvnDVFm">B7</strong></td>
+<td data-page-node-id="RJ0BhP9ANmOG2qeR9oCBRH">LoRA 训练</td>
+<td data-page-node-id="6I5jdtZ0HGwymWdtvBGgxO">1 个稳定风格 LoRA</td>
+<td data-page-node-id="Muife1GIdkUcKZ4QGMQXme">风格一致性人工通过；非核心，时间不足可砍</td>
+<td data-page-node-id="tExwCizSno5R1nEerHbLmr">09-26</td>
+<td data-page-node-id="VCva9jze8aZ5uKA5GvveOo">P1</td>
+</tr>
+<tr data-page-node-id="4JkwKD7xB0MFrPrawCMObL">
+<td data-page-node-id="PfWDqnIEBB5u819kZFEikd"><strong data-page-node-id="WbIrHQ5HHD6RCDC47sSbjY">B8</strong></td>
+<td data-page-node-id="gNRRvO13fvdiSjQapocDRC">消融与失败案例</td>
+<td data-page-node-id="xAmqCnpFvBm79E3EM9IcB7"><code data-page-node-id="jBJPSSur5BAvmhPXxNrqE6">experiments/failure/</code></td>
+<td data-page-node-id="oePsXH7F4FsmGsmo0d31wz">≥5 组失败案例 + 归因；至少 1 组消融（去掉 shadow / 去掉 relight）</td>
+<td data-page-node-id="pFL3qa9O9muu4f4G0umFFk">09-29</td>
+<td data-page-node-id="x5gr3d1jk67MPZBoCujps1">P1</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sec-B4-必须产出的正式实验表-模板" data-page-node-id="CxBmMIdyfwEQM11D8kfFNI">B4 必须产出的正式实验表（模板）</h3>
+<table data-page-node-id="2AceZO52QXRGWsLQVF0cFa">
+<thead data-page-node-id="aN93x9mhS3owyqGitnMWBF">
+<tr data-page-node-id="FoKP6LJf2PN4BFydUOwF4x">
+<th data-page-node-id="0DaXHoEgaAcn8M2xEmXH5a">Model</th>
+<th style="text-align: right;" data-page-node-id="YHhajknZfiHyUQBHXcxaR3">SAD ↓</th>
+<th style="text-align: right;" data-page-node-id="7CHidPwvgsiVVyBkt2pPh4">MSE ↓</th>
+<th style="text-align: right;" data-page-node-id="VPV7lhDhVbjUPY9QrsoC6c">Grad ↓</th>
+<th style="text-align: right;" data-page-node-id="QXG3ua9mKUkGY734i7aBod">Conn ↓</th>
+</tr>
+</thead>
+<tbody data-page-node-id="9FBnbGFHDy1As8gu8jwcIz">
+<tr data-page-node-id="fnlhSHhwBSiDxtBhFsyTbB">
+<td data-page-node-id="IwXh2k4Fpw9eLu4Ggq0saf">Baseline（BiRefNet）</td>
+<td style="text-align: right;" data-page-node-id="45r7nqhcVS1tB748IojDQf"></td>
+<td style="text-align: right;" data-page-node-id="DndYt6dncNHAFx8SpNrziN"></td>
+<td style="text-align: right;" data-page-node-id="aQAC0aPeOLBCGn9jq2pEFI"></td>
+<td style="text-align: right;" data-page-node-id="nSoAAdWzyJI2THkv3416ID"></td>
+</tr>
+<tr data-page-node-id="wi6nWcn6C45Znbc44tBITA">
+<td data-page-node-id="DwFg5TqC2Q3oKdpshlGKeY">Fine-tuned</td>
+<td style="text-align: right;" data-page-node-id="dbhwZRWx0CruYlvj42zuJ1"></td>
+<td style="text-align: right;" data-page-node-id="FINPcZXk4OEJJeFUKYFGEh"></td>
+<td style="text-align: right;" data-page-node-id="b8UI4EpuyEwWI202FFqLLN"></td>
+<td style="text-align: right;" data-page-node-id="UrV0VPvazEoWef9wOHGSzk"></td>
+</tr>
+<tr data-page-node-id="rh1UAx66Uqi3zc5TN4EgDt">
+<td data-page-node-id="VDiKQI7nMBv9vJbZN6HEl3"><strong data-page-node-id="2PpjGloMFIIe7OPpLTnAM3">Improvement</strong></td>
+<td style="text-align: right;" data-page-node-id="LMxmEFnEwUiK2bI5uZThHp"></td>
+<td style="text-align: right;" data-page-node-id="pvfROdNqcyBdOeadYgomiR"></td>
+<td style="text-align: right;" data-page-node-id="bgUQUnGakL5soY4pQuE6mp"></td>
+<td style="text-align: right;" data-page-node-id="cYssylE12xATIE1ENl7NVY"></td>
+</tr>
+</tbody>
+</table>
+<p data-page-node-id="HV9KJ4gPB4S5kYArlIILNm">配套必须保存：<code data-page-node-id="L2G8kCBd5frTWwevoQTRV8">train.log</code>、<code data-page-node-id="cBSfKxIeunRHmn4dhuVL65">eval.csv</code>、<code data-page-node-id="gLtXvii6QJy9bkK61r3YVo">config.yaml</code>、<code data-page-node-id="SiBFydfDHMaFTvzUx2GCpw">checkpoint</code>、视觉对比图。</p>
+<h3 id="sec-B6-四组实验定义-严格按此执行-不得中途改口径" data-page-node-id="zcAqlCXXWpfePJCjS9Cxho">B6 四组实验定义（严格按此执行，不得中途改口径）</h3>
+<table data-page-node-id="M0RtlxPAeREpPZ5czZoSJD">
+<thead data-page-node-id="J7wJtgWP6SQIiHHQeScelB">
+<tr data-page-node-id="TEYTQANZYgy01y21OGqnod">
+<th data-page-node-id="V8HiYdrPAZe5yomm3gkAq6">组</th>
+<th data-page-node-id="lzfT6WacCwihnIC1xlb41Y">流程</th>
+</tr>
+</thead>
+<tbody data-page-node-id="rCsOPBGtOL9Z7BJSpWwhp4">
+<tr data-page-node-id="MVthSBwc40badI8j7yhtlZ">
+<td data-page-node-id="PDJhew1HsJYBIOVD7cRCOD">A</td>
+<td data-page-node-id="TSvBLwT9HIQmbAGGko4oT2">抠图 → 直接合成</td>
+</tr>
+<tr data-page-node-id="rIq66RceyDLZKZBvCPRUQQ">
+<td data-page-node-id="z84kX73djSyIxJkbSmR3Hs">B</td>
+<td data-page-node-id="igoNbXs79B8fy3dHtH5vm4">抠图 → 合成 → T06 Harmonization</td>
+</tr>
+<tr data-page-node-id="Ddx26CNH4cMQz7zAVy4VYu">
+<td data-page-node-id="ESppTgXnoKtQDGKGP58GFE">C</td>
+<td data-page-node-id="U7K7nGgyIHcDtR9J9QJ6fK">抠图 → 合成 → T03+T04 Relighting</td>
+</tr>
+<tr data-page-node-id="8kAKclsGQNJWRmWY9OucmA">
+<td data-page-node-id="9p4kbQdtXsgMgvvHQ7xXXe">D</td>
+<td data-page-node-id="5P8zXFWDkZ7aC1Y2qz4wKU">抠图 → 合成 → T03+T04 → T05 Shadow → T06 Harmonization</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sec-3-3-C-组-前端-语音-Demo" data-page-node-id="VRJ0wHXCn0k244SKNeqPoN">3.3 C 组：前端 / 语音 / Demo</h2>
+<p data-page-node-id="8oAZfPYD02xYCdAFPoDqDz"><strong data-page-node-id="0XtaXbrWjxTGUM5IK9H7H6">Owner 核心责任</strong>：Web UI、Canvas、ASR、TTS、Agent 交互、DAG 可视化、历史、回滚 UI、Demo。</p>
+<table data-page-node-id="SXnKeMo1SsXMRoMdJplbuY">
+<thead data-page-node-id="vCZxcRdt0RLUulLJi1dI9j">
+<tr data-page-node-id="bzRJXgueguTpkbYftIdeXY">
+<th data-page-node-id="rR3nFe3hzAcgBPX6u6FZr8">WBS</th>
+<th data-page-node-id="nXXiHL95wXEH36n2itmgsu">任务</th>
+<th data-page-node-id="KPlxEIXJKFga1F1CQl7xAr">交付物</th>
+<th data-page-node-id="YYvkp4n3AIvwoWMyRSpfKb">验收标准</th>
+<th data-page-node-id="R55mcyDD4xl3YT3So0VLKF">截止</th>
+<th data-page-node-id="0NHCv0Ebb8ULUBTB8paO7O">优先级</th>
+</tr>
+</thead>
+<tbody data-page-node-id="E2WINytrax7FFy0SLol4UG">
+<tr data-page-node-id="v1Xhnu3DpeAusg50ppAUuc">
+<td data-page-node-id="GfhpyZAfUFJ108DjHF4Ea0"><strong data-page-node-id="g5qyR4OKNk7FocJbdhSmS6">C1</strong></td>
+<td data-page-node-id="ii0XOR0NkmNDEddcmX9dBL">首页（上传 + 一句话双入口）</td>
+<td data-page-node-id="OsYoN8GB5k08xZE1aixNyZ"><code data-page-node-id="cSmbtMhhNwvlHWfLmGSEXT">frontend/pages/Home</code></td>
+<td data-page-node-id="gzlQjA3PZOtcEsLxN81nim">首屏只有"上传图片"和"说一句话"两个主入口，无传统工具栏</td>
+<td data-page-node-id="ay1mIo8tN1NMvTnurDlLNs">09-14</td>
+<td data-page-node-id="K2h9Z6qu2pXGCCacLrau4M">P0</td>
+</tr>
+<tr data-page-node-id="U3GunR9WSrzz8qPTnLq8a7">
+<td data-page-node-id="fkcBlqT1Hq8a0EMNuh0MJU"><strong data-page-node-id="0gPICzE5f14fNz02fvFVM4">C2</strong></td>
+<td data-page-node-id="alm847ixxJCigfd8B4aAHp">三栏工作台</td>
+<td data-page-node-id="cXQlPi2fgqlVbbyuTQNdIm"><code data-page-node-id="nudgxpJdKIYrt3jNLZPj4y">frontend/pages/Workbench</code></td>
+<td data-page-node-id="LAAajomMzT0dYR4InjDt5b">左素材 / 中 Canvas / 右 Agent（对话+Plan+Critic+状态）；底部 DAG 区</td>
+<td data-page-node-id="HMbGIX7iv20BySGq2t2gch">09-20</td>
+<td data-page-node-id="IvPmtKpzYRWoPrr49puQG6">P0</td>
+</tr>
+<tr data-page-node-id="ankaCd9GWCi81EqlRaGdTl">
+<td data-page-node-id="dqbcbq5GyZffwsIuTt3bpu"><strong data-page-node-id="K4jHDOiaoSVNV75YeuoSWQ">C3</strong></td>
+<td data-page-node-id="KDrVrSNUz0PdwHEMlCzoZl">语音链路（ASR + VAD + TTS）</td>
+<td data-page-node-id="WcLpC5eLTVoeGlzSjCpBDC"><code data-page-node-id="TIc6non6faFHY8o0QR3FzV">speech/</code></td>
+<td data-page-node-id="4rV5fUjvxaGZYgPP0RrzDq">端到端 ≤800ms；字准 ≥95%；全本地部署；界面能显示"你说了什么 / AI 在做什么"</td>
+<td data-page-node-id="RGg2NkaVqlby8SsT1HcBeX">09-18</td>
+<td data-page-node-id="aFYFQNS7F2y00DgU5VLb2a">P0</td>
+</tr>
+<tr data-page-node-id="V67ctQfLYDjnb2cp6fGnRK">
+<td data-page-node-id="wsDMGNkD703FFnAhHF6Mi2"><strong data-page-node-id="nA40hfnWlK9vorwHcnGWXW">C4</strong></td>
+<td data-page-node-id="VCMHoD7qhT95lIDcaYSDYL">多轮交互</td>
+<td data-page-node-id="Hr27f7RYrJBHvyv8qH83WD">会话状态 + 轮次管理</td>
+<td data-page-node-id="HeujLUpaEyx2JLAEFSbPGi">5 轮连续编辑完整剧本 100% 通过（见 §3.5）</td>
+<td data-page-node-id="TjcScmhExjmflNfttKllaN">09-24</td>
+<td data-page-node-id="Vn557uQ56uMPLyuCpjwjV2">P0</td>
+</tr>
+<tr data-page-node-id="Ps2Fc3kq1LAY79Ew3ieqg0">
+<td data-page-node-id="hX715Y86gzVw67AszBRxXR"><strong data-page-node-id="e94jt22ick1YHq5HNQYFkM">C5</strong></td>
+<td data-page-node-id="lxeQfHvg0SoXPy1ixuHrUd">DAG 可视化</td>
+<td data-page-node-id="eYFewHoyBMcb3LCVNJPs5u">节点图组件</td>
+<td data-page-node-id="EFKo9v9PfY0WSE5jVNnhBB">实时显示节点状态（pending/running/done/failed）；可点击节点查看中间产物</td>
+<td data-page-node-id="Se0FKqpdgEktAhJRq9xEVE">09-22</td>
+<td data-page-node-id="OSB78JnDhZbLDjT99TMLV0">P0</td>
+</tr>
+<tr data-page-node-id="GzHaOZS4m3frBikcuksUxR">
+<td data-page-node-id="ZOAQV5LW2J7Zf8jZBVvBsY"><strong data-page-node-id="gFDxqeO8eMjsCykZUyZLfz">C6</strong></td>
+<td data-page-node-id="VOtdMJfOJSdUPHn1HlvR1n">历史与回滚 UI</td>
+<td data-page-node-id="JHuBmdBmERARHAlYUPTojT">版本树 + 条件回滚交互</td>
+<td data-page-node-id="uppAd3G9Em5HpVxXDL8kpr">用户能选中历史节点回滚；支持"只回滚某一步，保留后续"</td>
+<td data-page-node-id="lGFuBkN1tWfoy5QnGpZbjc">09-25</td>
+<td data-page-node-id="2VhI8dHqHj7CLHj39kt7RJ">P0</td>
+</tr>
+<tr data-page-node-id="JsbiuBd8Cqq8dcdjAO0ZDg">
+<td data-page-node-id="BjdBwb7Ky9roUQ1HkC0nuB"><strong data-page-node-id="FkyskHmhkvjC58TAERBIs2">C7</strong></td>
+<td data-page-node-id="F8BP39rHcNHIv8oNZiBqoN">导出</td>
+<td data-page-node-id="2FbSNgG0xxdBbIGTOV4JAs">导出组件</td>
+<td data-page-node-id="GCXSeZCz7v1UOMllZM9i8r">PNG / JPG 多尺寸；带元数据</td>
+<td data-page-node-id="QZSnbLr3Oc71pXXHusS02n">09-26</td>
+<td data-page-node-id="5N2HzIlRim97PedwvSbjAY">P1</td>
+</tr>
+<tr data-page-node-id="prlDevFdW9KUFGDhgtUuAw">
+<td data-page-node-id="40AVBg2gZDiASKGU82npW1"><strong data-page-node-id="nsihykW9FoQXEQeHiHixCY">C8</strong></td>
+<td data-page-node-id="WAEbRSyDIfT0PeipWhaVh4">Demo 录制与素材</td>
+<td data-page-node-id="12BCRjxaPrLs1YC3wBxIX0">3 分钟视频 + 截图</td>
+<td data-page-node-id="fIIxnBhmwcflRJALEtgFhd">4 个 Demo 剧本全部录成（§3.4）；截图归档 <code data-page-node-id="n4MCGd5z6LTKkigW3vekBR">demo/screenshots/</code></td>
+<td data-page-node-id="g0IcZNajc29yBXpwnFetNN"><strong data-page-node-id="7P7p6nwWqilS88OA451RUt">09-30</strong></td>
+<td data-page-node-id="oHK1NwPYKs0AfxceOqgZTN">P0</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sec-C2-工作台布局-固定" data-page-node-id="GJhN4cnWo6ACRT0UroCNA9">C2 工作台布局（固定）</h3>
+<pre data-page-node-id="pUFzKq79oeND0kEXGyl5tx"><code class="language-text" data-page-node-id="qwBMRRFGDukbIZ3FWkBqnw">┌──────────┬──────────────────┬────────────┐
+│  素材     │      Canvas      │   Agent    │
+│  原图     │                  │  对话       │
+│  背景     │    最终合成       │  Plan      │
+│  参考图   │                  │  Critic    │
+│  Mask    │                  │  状态       │
+├──────────┴──────────────────┴────────────┤
+│              Execution DAG               │
+└───────────────────────────────────────────┘
+</code></pre>
+<h3 id="sec-C3-语音交互必须可见" data-page-node-id="QFvCUwlXAsTTtFdgco7fei">C3 语音交互必须可见</h3>
+<pre data-page-node-id="LZdFXECDnP3lLVUPd5Ew2L"><code class="language-text" data-page-node-id="Hmrf0cI4fHJuv0nxsxw0of">你：「把人物左侧调暖。」
+AI：「已识别人物和左侧光照区域，正在重新计算光照。」
+</code></pre>
+<p data-page-node-id="Jx4PTOaPQGF9TtiXS4clhd"><strong data-page-node-id="cqpYZbiGmnABIa8f79z52H">禁止出现"用户说完没有任何反馈"的黑盒状态。</strong></p>
+<h2 id="sec-3-4-四个-Demo-剧本-提前定死-C8-按此录" data-page-node-id="zHrfSym6MWBbaYEMHv3Mw5">3.4 四个 Demo 剧本（提前定死，C8 按此录）</h2>
+<table data-page-node-id="LxtP7un1QlnEuyrLvDOOQb">
+<thead data-page-node-id="8Kv9zGz8lwPUYCHu4UlSAJ">
+<tr data-page-node-id="38juMAAyhplMYwYPmMPY2g">
+<th data-page-node-id="vDFtLJoXLpSHqDa5Gblp2j">Demo</th>
+<th data-page-node-id="euI94qI5Q9UlBDznwNhZs2">剧本</th>
+<th data-page-node-id="qeDi9ayLPaMybHvuyoT3DI">验证的研究点</th>
+</tr>
+</thead>
+<tbody data-page-node-id="kDT9HEjeAqdOcmH8wQ9kfk">
+<tr data-page-node-id="8EFGjv41S7LGVojuulrkYm">
+<td data-page-node-id="i5BVZxCtBZT6WWlCDLconI"><strong data-page-node-id="Ivz8nsrcN2RKaHDhoAFnbp">Demo 01</strong></td>
+<td data-page-node-id="wDr6od3xsBA0q72xwZ9cta">「把这个人物放进咖啡馆。」→ 语音 → Planner → DAG → 抠图 → 背景 → 光影 → 结果</td>
+<td data-page-node-id="GOHzZBLRyTnHeJsTqj2qOJ">主链路 + 语音入口</td>
+</tr>
+<tr data-page-node-id="VCp2zllqRvydFShyM1Tjii">
+<td data-page-node-id="ezsDntksCkJFeFOga1Eusx"><strong data-page-node-id="LeVnh7wmOAQ0QGdOFCQdU7">Demo 02</strong></td>
+<td data-page-node-id="91bDyVroL9mgyq30sGyz4N">用户点击人物左侧：「这里增加一点暖光。」→ 系统识别 Target=Person / Region=Left / Action=Relight</td>
+<td data-page-node-id="e7XquTNGc7S33JwwkfQEHv">空间指代（创新点 2）</td>
+</tr>
+<tr data-page-node-id="EsAzQasEOXRsQznxAvv2cA">
+<td data-page-node-id="6yiJlbArjkOrGrm2OIAxuz"><strong data-page-node-id="5quq90zPQ8V4rCJopKMKa8">Demo 03</strong></td>
+<td data-page-node-id="jWr4X7PHlPAuUCGeYrzhNC">Critic 打出 Lighting 93 / Shadow 71 / Color 94 → 自动判断 Shadow 不达标 → 重跑 T05 → Shadow 91 → PASS</td>
+<td data-page-node-id="HpVLWB9ks8R5y09WettDHj">自评修正（主链路第 4 环）</td>
+</tr>
+<tr data-page-node-id="Y7T4oWYuOHgsJjv0W3Cnw1">
+<td data-page-node-id="qFF5GnY6kvPzrneAviqkgY"><strong data-page-node-id="ZC31xSFAmGoTcQduuZUgzS">Demo 04</strong></td>
+<td data-page-node-id="57wCHfUjWDqgNH7T6hlrUt">「换回第一版背景，但保留现在的光。」→ Background Node V1 + 当前 Lighting Node → 重跑 → 新结果</td>
+<td data-page-node-id="PdB39mmTuxCleVMfZKKBxC">条件回滚（创新点 3，最重要）</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sec-3-5-多轮测试剧本-C4-验收用-必须-5-轮全过" data-page-node-id="RN72Vj9X0uH5MMfXZlqqAS">3.5 多轮测试剧本（C4 验收用，必须 5 轮全过）</h2>
+<pre data-page-node-id="4fLBXnEw2JoT6Gh7NJeQk2"><code class="language-text" data-page-node-id="jR0e0VOyyDV1jFM9H0rg3E">Round 1  把人物放到咖啡馆
+Round 2  改成傍晚
+Round 3  光线太冷了
+Round 4  阴影轻一点
+Round 5  背景换回上一版，但是保留现在的光线
+</code></pre>
+<h2 id="sec-3-6-公共任务-三人共同-Owner-轮值" data-page-node-id="Jv0FgP4HBhHdp9H2MEGReW">3.6 公共任务（三人共同，Owner 轮值）</h2>
+<table data-page-node-id="tmSuByGaa9TaVIKH6jidPM">
+<thead data-page-node-id="DykEtHXXWF3qKb2aogaU55">
+<tr data-page-node-id="KNBBgtRFtEPYUO9UOIyqXa">
+<th data-page-node-id="pcieUOkmdOsgBaj5VqPZ1v">WBS</th>
+<th data-page-node-id="qNqZ3oNp8HwHcqmsXzHr8g">任务</th>
+<th data-page-node-id="8VHRrUQa4V8BN9TWbzGPvL">交付物</th>
+<th data-page-node-id="Og4oTss1KZCkqG6LlnV3LA">截止</th>
+<th data-page-node-id="TOnj21th0p2vObFivWHG5s">优先级</th>
+</tr>
+</thead>
+<tbody data-page-node-id="Ax42CGKDK0spnr1W8oqu3t">
+<tr data-page-node-id="iANbHGYbVDIprEBjdCjNhp">
+<td data-page-node-id="gIyelfaYmTij8gh5SDTB1v"><strong data-page-node-id="fB7zWfF7NzzC4EU6L1plXY">P1</strong></td>
+<td data-page-node-id="6kHDiHFgZMdGSmECkbQPvR">Git 仓库初始化（分支保护 + LFS + README + PR 模板）</td>
+<td data-page-node-id="glfv68WgDwI6frfAoTUZ2g">仓库</td>
+<td data-page-node-id="kONKjyqZu3MMpPal3n1gC1">09-08</td>
+<td data-page-node-id="m7QCocP3CS04ywUIJoCMyq">P0</td>
+</tr>
+<tr data-page-node-id="aHYpK6t8WdApj8FswaAr78">
+<td data-page-node-id="Uof3zeboF88uFr4zxwtjhr"><strong data-page-node-id="Sia6Q5YdRrwVx35o239qNe">P2</strong></td>
+<td data-page-node-id="mKvdMLaXiPt63yhxr52h9A">环境与数据冻结（依赖锁版本、数据清单、许可证确认）</td>
+<td data-page-node-id="FBzGAHPx0LDpZvx7vUX2Gp"><code data-page-node-id="KOBuqGrT4aGB6pd8OYQv4C">docs/env.md</code> + <code data-page-node-id="ENVr4JlvaeJ70rlMAZfMYh">data/README.md</code></td>
+<td data-page-node-id="csFtSmDvbZTj115gXhf46u">09-09</td>
+<td data-page-node-id="IxZ3E0dfxUToPbbXr6OM5V">P0</td>
+</tr>
+<tr data-page-node-id="HEz86wvPvxPW93cZg1baof">
+<td data-page-node-id="oLRPQHQcfmUhJOe128DoF3"><strong data-page-node-id="hQEFDHRdHHG1hwO7YJmPl0">P3</strong></td>
+<td data-page-node-id="nh5ZvTzVBjInaFbgozivnA">周进展简报</td>
+<td data-page-node-id="k7YSsg7N5xbxAWi7VvC4E8"><code data-page-node-id="nDWZ4LWOMHMVphEvLeYhnP">docs/weekly/2026-W*.md</code></td>
+<td data-page-node-id="6mU0jaPnZ5NcN9TLL4pWcW">每周日</td>
+<td data-page-node-id="nlxAH2a5jmlAihzANrnD2R">P1</td>
+</tr>
+<tr data-page-node-id="o7AX9cCngNgNqWYS2cIvOO">
+<td data-page-node-id="nDZD5DugwdzhEg9johM8Wq"><strong data-page-node-id="bDgzJRTbAbHOFG3vgyn8GJ">P4</strong></td>
+<td data-page-node-id="PWilN0XDS4ytWuVOEpu9Ee">用户研究组织（约人 n≥10、问卷设计、双盲流程）</td>
+<td data-page-node-id="FlLBdiuskg3ecMNLaG9g0u"><code data-page-node-id="YO3CMOZNq4s0VAG0psB28Z">experiments/user_study/</code></td>
+<td data-page-node-id="nEvW7IyPpLyBtKBTqV2G7p">09-26</td>
+<td data-page-node-id="VbvkRYGXl1TyMMwNGSi5Z2">P1</td>
+</tr>
+</tbody>
+</table>
+<hr  data-page-node-id="x9HCE0pinhCAfW8C9oOD42"/>
+<h1 id="sec-四-总体架构与框架结构" data-page-node-id="co4wh0gxybUcKk26suEoRK">四、总体架构与框架结构</h1>
+<h2 id="sec-4-1-六层架构" data-page-node-id="qtq0RYTlXrd9OmWL5jhU53">4.1 六层架构</h2>
+<pre data-page-node-id="AVbOodQE78T3Ex6EFljuBX"><code class="language-text" data-page-node-id="9vbUHWHgUL85ytK8EWmgR8">┌────────────────────────────────────────────┐
+│              Layer 1  用户交互               │
+│   图片 / 语音 / 点击 / 框选 / 文本 / 参考图   │
+└─────────────────────┬──────────────────────┘
+                      ↓
+┌────────────────────────────────────────────┐
+│              Layer 2  Agent                 │
+│   Planner / Tool Router / Critic / Re-plan  │
+└─────────────────────┬──────────────────────┘
+                      ↓
+┌────────────────────────────────────────────┐
+│              Layer 3  DAG                   │
+│   Task Graph / State / Version / Rollback   │
+└─────────────────────┬──────────────────────┘
+                      ↓
+┌────────────────────────────────────────────┐
+│            Layer 4  图像工具                 │
+│  Matting / Background / Lighting / Shadow   │
+│  Relighting / Harmonization / Enhancement   │
+└─────────────────────┬──────────────────────┘
+                      ↓
+┌────────────────────────────────────────────┐
+│             Layer 5  模型                    │
+│  BiRefNet / SAM 2 / Diffusion / IC-Light    │
+│  LoRA / VLM / ASR / TTS                     │
+└─────────────────────┬──────────────────────┘
+                      ↓
+┌────────────────────────────────────────────┐
+│         Layer 6  数据与评测                  │
+│  Dataset / Checkpoint / Metrics / Logs       │
+│  Experiments / User Study / Reports          │
+└────────────────────────────────────────────┘
+</code></pre>
+<h2 id="sec-4-2-控制流总图" data-page-node-id="FJYewej6hHERsKtKZvobrF">4.2 控制流总图</h2>
+<pre data-page-node-id="HNw8zxOR5zKc34RZS58Z0Z"><code class="language-text" data-page-node-id="nJD6AsGBIAIaqks2zWjakZ">                        用户
+                         │
+             ┌───────────┼───────────┐
+             │           │           │
+           图片         语音       点击/框选
+             │           │           │
+             └───────────┼───────────┘
+                         ↓
+                  Multimodal Agent
+                         ↓
+                      Planner
+                         ↓
+                   Structured DAG
+                         ↓
+       ┌─────────────────┼─────────────────┐
+       ↓                 ↓                 ↓
+     Matting         Background        Lighting
+       ↓                 ↓                 ↓
+       └─────────────────┼─────────────────┘
+                         ↓
+                      Relight
+                         ↓
+                       Shadow
+                         ↓
+                   Harmonization
+                         ↓
+                       Critic
+                         ↓
+              ┌──────────┴──────────┐
+              ↓                     ↓
+            PASS                  FAIL
+              ↓                     ↓
+            Final            Re-plan / Re-run
+              ↓                     ↓
+              └──────────┬──────────┘
+                         ↓
+                      TTS 语音反馈
+</code></pre>
+<h2 id="sec-4-3-工具-Schema-骨架" data-page-node-id="213p283LmuYVZDROisphts">4.3 工具 Schema 骨架</h2>
+<p data-page-node-id="1wldAqhWVzEJ08vA7AyINq">统一信封（所有工具共用）：</p>
+<pre data-page-node-id="E6mSa4kZxuCcOR8xR4u9SV"><code class="language-json" data-page-node-id="3GC27PvWuH5qcjMO9bvqhS">{
+  &quot;tool&quot;: &quot;matting&quot;,
+  &quot;version&quot;: &quot;1.0&quot;,
+  &quot;request_id&quot;: &quot;uuid&quot;,
+  &quot;inputs&quot;: { },
+  &quot;options&quot;: { &quot;quality&quot;: &quot;draft|normal|fine&quot; }
+}
+</code></pre>
+<p data-page-node-id="DiWwxtBA37ojn5byqbZF5s">统一响应：</p>
+<pre data-page-node-id="NxcOXqoGZUAtrytnQ2M06f"><code class="language-json" data-page-node-id="lA6cd4mBRGFaNmrqQFqVUC">{
+  &quot;request_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;success | failed | timeout&quot;,
+  &quot;outputs&quot;: { },
+  &quot;error&quot;: { &quot;code&quot;: &quot;E_MATTING_OOM&quot;, &quot;message&quot;: &quot;...&quot;, &quot;retryable&quot;: true },
+  &quot;latency_ms&quot;: 1830,
+  &quot;artifacts&quot;: [&quot;s3://.../alpha.png&quot;]
+}
+</code></pre>
+<p data-page-node-id="YMkPLFoqeAoiU9HTEW5dLG">Planner 输出的 DAG 示例：</p>
+<pre data-page-node-id="NDxbTJFNIcvvKASmYuksHC"><code class="language-json" data-page-node-id="AOZtlSuxGXGzBTgedDoUF1">{
+  &quot;plan_id&quot;: &quot;p_001&quot;,
+  &quot;nodes&quot;: [
+    { &quot;id&quot;: &quot;n1&quot;, &quot;tool&quot;: &quot;matting&quot;,             &quot;inputs&quot;: { &quot;image&quot;: &quot;@upload:0&quot; } },
+    { &quot;id&quot;: &quot;n2&quot;, &quot;tool&quot;: &quot;background_generate&quot;, &quot;inputs&quot;: { &quot;prompt&quot;: &quot;傍晚的咖啡馆&quot; } },
+    { &quot;id&quot;: &quot;n3&quot;, &quot;tool&quot;: &quot;lighting_estimate&quot;,   &quot;depends_on&quot;: [&quot;n2&quot;] },
+    { &quot;id&quot;: &quot;n4&quot;, &quot;tool&quot;: &quot;relight&quot;,             &quot;depends_on&quot;: [&quot;n1&quot;, &quot;n3&quot;] },
+    { &quot;id&quot;: &quot;n5&quot;, &quot;tool&quot;: &quot;shadow_generate&quot;,     &quot;depends_on&quot;: [&quot;n2&quot;, &quot;n4&quot;] },
+    { &quot;id&quot;: &quot;n6&quot;, &quot;tool&quot;: &quot;harmonize&quot;,           &quot;depends_on&quot;: [&quot;n5&quot;] }
+  ],
+  &quot;edges&quot;: [[&quot;n1&quot;,&quot;n4&quot;],[&quot;n2&quot;,&quot;n3&quot;],[&quot;n3&quot;,&quot;n4&quot;],[&quot;n4&quot;,&quot;n5&quot;],[&quot;n5&quot;,&quot;n6&quot;]]
+}
+</code></pre>
+<h2 id="sec-4-4-版本-DAG-回滚模型" data-page-node-id="cf3rtsd3GEMob5wVAEQubO">4.4 版本 / DAG / 回滚模型</h2>
+<p data-page-node-id="toMuVZf36H69dH5WdyjE11"><strong data-page-node-id="UAoT3tBzvHPqtBuLEsVfwn">版本链</strong>（线性）：</p>
+<pre data-page-node-id="N5rVNrW9U2EGyvdOUxawG8"><code class="language-text" data-page-node-id="FH3EtCtPOYHLm9xA0XBz5x">V1 → V2 → V3 → V4 → V5
+</code></pre>
+<p data-page-node-id="edcCizsW8ANynDd8Eob5f3"><strong data-page-node-id="kY5HrJQLrywkegN29IaP0H">编辑历史树</strong>（分叉 + 条件回滚）：</p>
+<pre data-page-node-id="UZz1qQQVFsz5tTm6ZrHW3u"><code class="language-text" data-page-node-id="cj5McdFtKAMBi79or9pOGN">              背景 A
+               │
+原图 → 抠图 ───┤
+               │
+               └→ 背景 B → 重打光 → 阴影
+</code></pre>
+<p data-page-node-id="BvCw4uGesWWXwQlOaCzG6x">条件回滚语义：</p>
+<pre data-page-node-id="QPTW6Pit9n0aJgRH2OmbZb"><code class="language-text" data-page-node-id="Lk8JYPUERBhr4M4skS6yx8">用户：「换回背景 A，但保留现在的灯光。」
+→ 恢复 Background Node 到 V1 版本
+→ 保留 Relighting Node 当前版本
+→ 重跑 Background 的所有下游节点（Shadow / Harmonize）
+→ 生成新版本 V6
+</code></pre>
+<p data-page-node-id="40C07HOJH3Bxzl3dZXbrJp">实现要点：<strong data-page-node-id="NASvUSeu7qsSULoTzHOmrb">节点级版本化</strong>（每个 node 存 <code data-page-node-id="TppCF9QLSfVsFqzs53NrsV">version</code> + <code data-page-node-id="2wpCfqyBabdWVL9NU35ZDK">output_artifact</code>），而非整图版本化。这样才可能做"部分回滚"。</p>
+<h2 id="sec-4-5-Critic-评分模型" data-page-node-id="5AFpXyB3qEse2pLEtfFwwF">4.5 Critic 评分模型</h2>
+<pre data-page-node-id="4CJDcjuiTXZBobwTQNj65H"><code class="language-text" data-page-node-id="isMCzKcYUCm28M7MjXsvOb">Lighting      92
+Shadow        84
+Color         95
+Edge          97
+─────────────────
+Overall       91   ← 加权，权重先按 (0.3/0.25/0.2/0.25) 初始化，用 30 组样本校准
+</code></pre>
+<h2 id="sec-4-6-部署架构-维持开题方向-不推翻后端" data-page-node-id="n7OAZvlnHp7LuKWpDKyQLh">4.6 部署架构（维持开题方向，不推翻后端）</h2>
+<pre data-page-node-id="txFPK7hEiBphtGH5uSRM7w"><code class="language-text" data-page-node-id="IbaN6g1VPXzexfWw4YXcb9">                    Web Frontend
+                         │
+                         ↓
+                  Spring Boot API
+                         │
+            ┌────────────┼────────────┐
+            ↓            ↓            ↓
+          Auth        Project       Agent
+                                      │
+                                      ↓
+                                 Python AI Service
+                                      │
+                ┌─────────────────────┼─────────────────┐
+                ↓                     ↓                 ↓
+              Matting              Lighting          Diffusion
+</code></pre>
+<table data-page-node-id="mh95UsN2gDxyXcpjZMnEKD">
+<thead data-page-node-id="kciOg8TO1mUXjkiVRQMKgv">
+<tr data-page-node-id="PYcGcSCejONsKJfVpDYdPh">
+<th data-page-node-id="hKS8FcRqDcYIPo0YInfA1n">组件</th>
+<th data-page-node-id="gdOIIkLuCHbs4H8Ti9GAR0">选型</th>
+</tr>
+</thead>
+<tbody data-page-node-id="JtWJ2M9TbknOY7yZ814oNf">
+<tr data-page-node-id="decClZDJWCyXOHWwzqeft6">
+<td data-page-node-id="qDmw0DeVJ5fOWs6Q9xLEby">数据库</td>
+<td data-page-node-id="42b2Hu4Q36SQHzQd5fmCLz">MySQL + Flyway 迁移</td>
+</tr>
+<tr data-page-node-id="oQvp9BCUc2BmUEEa29zv3N">
+<td data-page-node-id="R7X9e54WFuOUHGM5XaUiHS">任务</td>
+<td data-page-node-id="haE7nVU3zwMG5oJNMUbXZU">Job Queue（异步，WebSocket 推送状态）</td>
+</tr>
+<tr data-page-node-id="yvKQaLBjR486Fi2G0HHzk6">
+<td data-page-node-id="5MhNfR5pNzskxf45mSZwYt">模型</td>
+<td data-page-node-id="wxCAt8GUcVvO0vUcr3uchh">Model Registry（<code data-page-node-id="IDtSyL3oHPmRUJEnMXPsAE">model_registry.yaml</code>）</td>
+</tr>
+<tr data-page-node-id="Es3loYr8rwE7TO0D8IVEru">
+<td data-page-node-id="YQKcVeeXXpmKpKQutXSyu3">对象</td>
+<td data-page-node-id="NEoeZ4FeElXyUnJOpCQEpP">Image / Mask / Result / Checkpoint 统一对象存储</td>
+</tr>
+<tr data-page-node-id="ToWB24gHmBvM8tGwFiUdSW">
+<td data-page-node-id="nxXBLxVxYuBXbV4K5puaK8">语音</td>
+<td data-page-node-id="ovJhS1uscRKLqNxnyii4D1">ASR / TTS <strong data-page-node-id="pq45cNHOsVYZBC277tQ8wy">全本地部署</strong>（数据不出域）</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sec-4-7-推荐目录结构-固定-不得自创顶层目录" data-page-node-id="mXF2ZFdDFGBwMu1BrsnvlY">4.7 推荐目录结构（固定，不得自创顶层目录）</h2>
+<pre data-page-node-id="K8jkMsGxfLSMRRr0MX88ZS"><code class="language-text" data-page-node-id="HzSbYsPK35bGVHttWOu5eM">project/
+├── docs/
+│   ├── architecture.md        # 架构说明
+│   ├── api-spec.md            # 接口规范
+│   ├── task-board.md          # 任务看板
+│   ├── experiment.md          # 实验规范与记录
+│   ├── env.md                 # 环境与依赖锁版本
+│   ├── deployment.md          # 部署文档
+│   └── weekly/                # 周进展简报
+├── backend/springboot/
+├── ai-service/
+│   ├── matting/  lighting/  shadow/  harmonization/  diffusion/
+├── agent/
+│   ├── planner/  executor/  critic/  schema/  rollback/  eval/
+├── frontend/
+│   ├── pages/  components/  canvas/
+├── speech/
+│   ├── asr/  tts/
+├── training/
+│   ├── matting/  lora/  lighting/
+├── data/
+│   ├── matting/  composition/  lighting/  instruction/
+├── experiments/
+│   ├── baseline/  ours/  metrics/  visualization/  failure/  user_study/
+└── demo/
+    ├── screenshots/  videos/  final/
+</code></pre>
+<hr  data-page-node-id="qZ2c7pqYPeyry7mz5p0KSI"/>
+<h1 id="sec-五-实现方案概述" data-page-node-id="AgccOzO6BB779c4LO1S6PG">五、实现方案概述</h1>
+<h2 id="sec-5-1-抠取-B-组主责" data-page-node-id="svRE9nVpnwKxdguA7K0Hbx">5.1 抠取（B 组主责）</h2>
+<p data-page-node-id="BfwJmBKD8Swh1Stkm9E0CG"><strong data-page-node-id="kUnxAUAIeJUjsy7rGVb1Br">路线</strong>：BiRefNet（无引导发丝级） + SAM 2（交互指代） 组合</p>
+<pre data-page-node-id="eYoAZwHxBQDACoEEUe8L7x"><code class="language-text" data-page-node-id="PvZarQSsjjF0xovRwFMMjI">输入 RGB
+  ↓  SAM 2（点/框提示）→ 粗分割 mask
+  ↓  trimap 构造
+  ↓  BiRefNet / 轻量抠图头 → 细化半透明边缘
+输出 Alpha
+</code></pre>
+<p data-page-node-id="8GHokoO7lKGjBMNbbUhrq9"><strong data-page-node-id="9t0wxAMQB89VC1hQDLUt7G">训练数据</strong>：按合成公式 <code data-page-node-id="kQW1VAfIXUQslCpkmch0at">I = αF + (1−α)B</code> 自动构造训练对，前景来自已有标注数据，背景随机采样。
+<strong data-page-node-id="4I4PofO0LgdaVKuPMKXQMC">训练策略</strong>：单次 ≤24h、每 30 分钟存 checkpoint、支持断点续训与抢占式实例；先在本地 A6000 用 1/10 数据冒烟（≤30 分钟）再全量。
+<strong data-page-node-id="ofQ9Kn5r4zTeG4wn9aJNGo">评价</strong>：Composition-1k 协议 SAD / MSE / Grad / Conn，含难例子集单独统计。</p>
+<h2 id="sec-5-2-背景生成-B-组-A-组接口" data-page-node-id="Yu6EdvqBYPTZGr2BTxakiW">5.2 背景生成（B 组 + A 组接口）</h2>
+<p data-page-node-id="578prh8wIHtYunGe9AkyMv">以 <strong data-page-node-id="ojjJpu5i7oSYt84a4AmVUC">SDXL / FLUX + ControlNet（深度 / 边缘结构条件）</strong> 为主，参考图驱动走 Paint-by-Example 思路。
+关键约束：必须输出<strong data-page-node-id="vNpD4Kmd0qPDbCpqXhkhXH">可与前景对齐的尺寸与视角</strong>，并同步产出深度图供 T03/T05/T07 使用。</p>
+<h2 id="sec-5-3-光影一致性融合-B-组核心研究点" data-page-node-id="zurj5dbyrRh9kOIUQ6IBLo">5.3 光影一致性融合（B 组核心研究点）</h2>
+<pre data-page-node-id="XMgCD3c3fe1LRVhVP98rvH"><code class="language-text" data-page-node-id="Q1kdwvbjj6k3HEul2k1k5g">Background
+    ↓  T03 lighting_estimate（球谐 SH9 / 方向光 / 色温 / 强度）
+Lighting Params
+    ↓  T04 relight（借鉴 IC-Light 潜空间光照一致性思想）
+Relit Foreground
+    ↓  T05 shadow_generate（借鉴物理推理阴影：光源方向估计 + 几何锚定）
+Contact Shadow
+    ↓  T06 harmonize（色彩 / 噪点 / 景深匹配）
+Final
+</code></pre>
+<ul data-page-node-id="Z09800595e3m6oju10zZ1H">
+<li data-page-node-id="tiq4cr26SWOLjUuoVoOoVH"><strong data-page-node-id="WVce0GPfD4do0bdil8fSJh">T03</strong>：优先用现成光照估计器输出 SH 系数与光源方向，不要自研（时间不够）。</li>
+<li data-page-node-id="c1DrUvFu8CDVwrIrKqQFPM"><strong data-page-node-id="Hru22jGcJuE0QGRF2Ep7Gx">T04</strong>：IC-Light 优先（背景条件模式最贴合本场景）；SwitchLight / DiLightNet 作为对比。</li>
+<li data-page-node-id="jNJjd3vyabJEBhCL9wCGwF"><strong data-page-node-id="D1WYtZI5y15MpQIf0IulfY">T05</strong>：先做程序化降级版（按光源方向 + mask 形态生成软阴影），再做扩散版；程序化版同时是 B6 中 A 组基线的一部分与降级方案。</li>
+<li data-page-node-id="gGhKnAnEPKYAnXzImcpVUk"><strong data-page-node-id="b4ZtqQ0Y5639Cm0TA1eFOy">T06</strong>：DoveNet / Harmonizer 思路，或直接用扩散 inpainting 做局部和谐化。</li>
+</ul>
+<p data-page-node-id="h3VuHTdTErO1OelyGnEZ10"><strong data-page-node-id="uEEEloCdjhq2wXsABPRULD">一致性评分</strong>：用光照 / 法线估计器对前后景分别估计，计算方向差与色温差，作为 Critic 的客观分量（与 VLM 主观分融合）。</p>
+<h2 id="sec-5-4-Agent-A-组主责" data-page-node-id="XRtLF2oloupdSOIEmCO1hQ">5.4 Agent（A 组主责）</h2>
+<ul data-page-node-id="koJluaIraee5pJCLDWy1Wl">
+<li data-page-node-id="CDAiJxGcDXMcaZdhdK8YBz"><strong data-page-node-id="LUufBIgq9w54uQiEjEzpRz">Planner</strong>：调用成熟大模型 function calling 输出 JSON DAG，<strong data-page-node-id="Gd97zXK9ueZBl5wAxRySSf">不生成像素</strong>。用 JSON Schema 强校验 + few-shot 示例约束自由度；校验失败最多重试 2 次，再失败走程序化降级（关键词映射到固定模板 DAG）。</li>
+<li data-page-node-id="KgXopnuJ4cwKyIKTIIW0Vc"><strong data-page-node-id="pWQZcU2wlTc14dm1d6RFsA">Executor</strong>：拓扑排序执行；节点级幂等；产物落对象存储并在 DAG State 中记录引用。</li>
+<li data-page-node-id="JszV9cfxH8g0QlXZg9qRAs"><strong data-page-node-id="7lveA9EnB3JaiAuBkSGS3C">Critic</strong>：VLM 打分（五维）+ 客观光照一致性分 → Overall；低于阈值则按 §3.1 A4 映射表触发重跑。</li>
+<li data-page-node-id="NXAdtceHEKPPBfDDvP5n4T"><strong data-page-node-id="fVpLMaztqgCBhdbcMR824O">Rollback</strong>：节点级版本化，支持部分回滚 + 下游重跑。</li>
+<li data-page-node-id="cXAUP8AVGVSAhf2zauv96p"><strong data-page-node-id="a9OrhcLkoy7DdutikrQDTb">两级出图</strong>：草稿级（低步数 / 低分辨率，≤10s）→ 精修级（≤30s），控制端到端延迟。</li>
+</ul>
+<h2 id="sec-5-5-语音-C-组主责" data-page-node-id="0remks00gQVcCk8hF9ZPM6">5.5 语音（C 组主责）</h2>
+<pre data-page-node-id="HxoBwRnatp3II9YtXUAGDY"><code class="language-text" data-page-node-id="BPjMLwx7K27Ht9EV71KuDn">Microphone → VAD（端点检测）→ 流式 ASR（本地）→ Text
+   → Planner → DAG → Execution → TTS（本地）→ 播放
+</code></pre>
+<ul data-page-node-id="6qn4hkkPDmu55e9Q7XMVRm">
+<li data-page-node-id="2GgJEaaJfqPiOQqV4os4Z5">全本地部署（数据不出域）。</li>
+<li data-page-node-id="weQ8Sv80zzJRbQ9AI0bfSU"><strong data-page-node-id="ogCEqUgMdRvNp4nzwKwGZa">降级设计</strong>：ASR 置信度低或解析出歧义指代时，弹出"我理解的是 XXX，确认吗？"二次确认，同时提供文本输入框兜底（对应开题里提到的语音一致劣于文本这一已知问题）。</li>
+<li data-page-node-id="7hNxdyXrgsn6Dz32E4IZtZ">界面必须实时显示识别文本与 Agent 当前动作。</li>
+</ul>
+<h2 id="sec-5-6-前端-C-组主责" data-page-node-id="4n9Go8fEbpGbTYTMQgRFYY">5.6 前端（C 组主责）</h2>
+<ul data-page-node-id="AUA5CPV9wGspS5awZGnRAP">
+<li data-page-node-id="9B4ZHWIaf3YXYiDqxpE68E">首页：<code data-page-node-id="XJnOnwziHsCBO6FppFGhhb">上传图片</code> + <code data-page-node-id="xFY54pr3kB1xy3r1QDOyE3">说一句话</code> 双入口，无传统工具栏。</li>
+<li data-page-node-id="bMON9BwdGm46dXXfBVopDv">工作台：三栏 + 底部 DAG（§3.3 C2 固定布局）。</li>
+<li data-page-node-id="UW3IqoyV96M7kWtP04M5Ua">DAG 可视化：节点状态实时刷新，点击节点查看中间产物（<strong data-page-node-id="vFHtMk73cWjQ4c1mtYRNrD">这个能力对 debug 的价值极大，见 §6.1 建议 4</strong>）。</li>
+<li data-page-node-id="zsXGlA8AvEvrfXoXBoIvse">历史树：版本树 + 条件回滚交互。</li>
+</ul>
+<h2 id="sec-5-7-降级方案-三级-必须实现" data-page-node-id="1m9qaNagRWFzAq9gfoIuWq">5.7 降级方案（三级，必须实现）</h2>
+<table data-page-node-id="f2l6x88xUhuyAoaxPtnbcH">
+<thead data-page-node-id="SmhvIuaCubhfw4qAMs6oXZ">
+<tr data-page-node-id="9MqxrDeuUOcIq3xPI55CAB">
+<th data-page-node-id="SCiflbZ2UuejUbQjOfqrst">级别</th>
+<th data-page-node-id="A844hSpzjMYCRnsbyBO5jq">触发条件</th>
+<th data-page-node-id="ELHEXOQnZi3sdNJWTcVqCT">行为</th>
+</tr>
+</thead>
+<tbody data-page-node-id="uXaDRsrGLFiLBaAVGas1Lr">
+<tr data-page-node-id="Z2u3TjUaz18HVQNmcRYHpz">
+<td data-page-node-id="w9CRNS3s8TIZ2mXiQ859Jc">L1</td>
+<td data-page-node-id="JiwYwEtgbHSMYWFM6GWiYC">单工具超时 / OOM</td>
+<td data-page-node-id="4kh7eIZqg30PsqiNKWuyE9">重试 1 次 → 换低精度档位 → 程序化方案</td>
+</tr>
+<tr data-page-node-id="dF0ImDzCEbsU1qS0vn5luZ">
+<td data-page-node-id="0mEHvndpvESNierObORt8D">L2</td>
+<td data-page-node-id="QjOiupLPoqwBFiWN0CoS4J">Planner 连续 2 次校验失败</td>
+<td data-page-node-id="yQnFJclLDyaFbZZ4irVkEe">关键词模板 DAG 兜底</td>
+</tr>
+<tr data-page-node-id="xEyYpPAq1HQfsqExswmH2b">
+<td data-page-node-id="4zo1heyzEoHcaG3YeSKEPE">L3</td>
+<td data-page-node-id="EODF4Xyed29d6AyoxCLihb">训练权重缺失 / 加载失败</td>
+<td data-page-node-id="rC5n078ubu0XUApT5YX37u">自动回落 Base Model，日志告警</td>
+</tr>
+</tbody>
+</table>
+<p data-page-node-id="eARaywZ0NfkzFm90zSpcd1"><strong data-page-node-id="Mlh2DMF7mxhULfFP2db9Vs">原则：任何单点失败都不能让系统白屏。</strong></p>
+<hr  data-page-node-id="6n0Z7a3XQI1EHWEQxzCqsZ"/>
+<h1 id="sec-六-改进建议与风险" data-page-node-id="BYGu0EBOlZ3VSAExH4zqKU">六、改进建议与风险</h1>
+<h2 id="sec-6-1-对当前方案的-10-条改进建议" data-page-node-id="ncDlXYx7yVZ4uGgr7Tlnul">6.1 对当前方案的 10 条改进建议</h2>
+<blockquote data-page-node-id="TvnYLTfyBQKDRMSj06QpLC">
+<p data-page-node-id="UAmjsuejUdXkpIQ30cMgUu">以下均针对本规范 / 常见执行偏差提出，按影响面排序。</p>
+</blockquote>
+<table data-page-node-id="3Sj52TgoobnvVpIUPnu1dc">
+<thead data-page-node-id="fkHPYWL8LSDCltb5a5Q7ZH">
+<tr data-page-node-id="RBpBv4kR5cyAtZDCP9Eegi">
+<th data-page-node-id="TxUGBW7uCitqJDjGyQ1BUE">#</th>
+<th data-page-node-id="hmk3ee47IPuGTKWKwEA14e">建议</th>
+<th data-page-node-id="ja2JkeD4FF9GuKGqPf0Ko5">为什么</th>
+<th data-page-node-id="rs1CPMniAIiqiGpLdSDzLe">落地动作</th>
+</tr>
+</thead>
+<tbody data-page-node-id="29EXp8SOAKL6ApEmc52jep">
+<tr data-page-node-id="c9xLjnnxEANZaHOP6ZymOR">
+<td data-page-node-id="z3XlMltsVbT9KU1MOByDpG"><strong data-page-node-id="Oa8S39bvUwvqdis1uFIrAj">1</strong></td>
+<td data-page-node-id="j0aasGVudx6S8sbXCrqPtf"><strong data-page-node-id="eSH21xOE2uKHgNghD2K25M">Critic 阈值必须先标定，不能拍脑袋</strong></td>
+<td data-page-node-id="5Gsa00Z8XoSrFUniyG2AIE">阈值定高了疯狂重跑（慢），定低了形同虚设。开题里没有给口径</td>
+<td data-page-node-id="sJfcdaILfFUxJCAeRTWUB6">09-21 前用 30 组样本做"Critic 分 vs 人工分"标定，用 ROC 选阈值，写进 <code data-page-node-id="M5VD50N3NdWLidgB49X1ZM">agent/critic/threshold.md</code></td>
+</tr>
+<tr data-page-node-id="0oiGKrAyptvAMk2Iyk6qsh">
+<td data-page-node-id="dLoDGry6uvVUtJH95Uu7FV"><strong data-page-node-id="ChBWnvGK1GoC1spPqI1Vfr">2</strong></td>
+<td data-page-node-id="skhDCHidFdcD1N972cvpch"><strong data-page-node-id="nZF8C1Dbl0TPRQ4lmU9gnD">MVP Demo 与训练彻底解耦，09-13 就要有能跑的端到端</strong></td>
+<td data-page-node-id="prm6cslLe44OT3vbY6pbdS">9/15 之前如果只有抠图没有链路，一旦训练延期，整个项目就只剩抠图</td>
+<td data-page-node-id="qF2CTL0D8L98CTksGyJyIM">09-13 前用 Base Model + 程序化阴影搭出"丑但能跑"的全链路，之后逐段替换成训练模型</td>
+</tr>
+<tr data-page-node-id="K844igYDj6y7kFOqYlBg0b">
+<td data-page-node-id="5oVZBNufn4KTDluJ8sinYV"><strong data-page-node-id="zS88e9rgZu7esqIdIE0fEX">3</strong></td>
+<td data-page-node-id="BM1HNOujEijTfsP823WuHx"><strong data-page-node-id="0LXkY8u55ehp726t6GneSE">数据集与难例集必须 09-09 冻结</strong></td>
+<td data-page-node-id="0VYiFOrPayKWZfhOdBltAk">数据集不冻结，B 组会一直"再清洗一批"，训练无限延后</td>
+<td data-page-node-id="JAoa98pKwFhCngwer2fs2k">09-09 24:00 冻结 <code data-page-node-id="5GF0tGjhFlkbUc5wPa2BaO">data/</code>，之后新增数据只能进 v2 且需全组同意</td>
+</tr>
+<tr data-page-node-id="9TpL3wfHuCCRXDaXhCG0Dv">
+<td data-page-node-id="YCMmgR8qFl9T8nVdsVmDol"><strong data-page-node-id="SB0VNh2Soh0HW4hqlTDRh8">4</strong></td>
+<td data-page-node-id="RklDW3yHNVAubVkXkhy5jl"><strong data-page-node-id="0ONxCbOycT9jXubDMQ2A4t">中间态可视化是最高性价比的投入</strong></td>
+<td data-page-node-id="twHRBE6jS7WXRhw6n1HsDb">合成链路 6~8 个节点，出图不对时肉眼无法定位是哪一步错</td>
+<td data-page-node-id="b98CocFS5lNH0DrYXRhINc">C5 的"点击 DAG 节点看中间产物"提前到 09-16 完成，优先级等同 P0</td>
+</tr>
+<tr data-page-node-id="1Lhybd8QojhMVCqK9vUMqs">
+<td data-page-node-id="Cnfc0HXsCDOMiGipOfwrhX"><strong data-page-node-id="GjiUB3sPFnaTE5LHYQtemZ">5</strong></td>
+<td data-page-node-id="G0qk8PkIdtTAe8DiffujHh"><strong data-page-node-id="zmYXgTKCI1MN4Svo47C1Zr">Critic 不只是验收器，要做数据飞轮</strong></td>
+<td data-page-node-id="govpHmu2NHfPqPY0XfX2zX">现在只用于 PASS/FAIL，浪费了</td>
+<td data-page-node-id="V63FnII4gdhk4ZT9dJDK02">把 (指令, DAG, 产物, Critic 分, 人工修正) 存成结构化日志，作为后续 Planner few-shot 与报告素材</td>
+</tr>
+<tr data-page-node-id="kejihk39BBTL7sT0MRV9Hv">
+<td data-page-node-id="PHnC2OYOqAOmsxjUr4NQ5Y"><strong data-page-node-id="UUf9Tig9xC59Q7M60AYvPJ">6</strong></td>
+<td data-page-node-id="m24OaL0eqCQ6IuO5B7ovf8"><strong data-page-node-id="j4nvJU5aiJ4MvKUVeyaYHd">语音链路必须有二次确认与文本兜底</strong></td>
+<td data-page-node-id="CRqCj8p1kykKXN26XjDBG8">开题已引用语音一致劣于文本的结论，不加兜底会在 Demo 现场翻车</td>
+<td data-page-node-id="3s6Bp8ZmkkFu0ru1hVZ2J7">C3 内置"低置信度 → 确认弹窗 + 文本框"双通道</td>
+</tr>
+<tr data-page-node-id="DVhhVtLzV4Up7xq2yk98yx">
+<td data-page-node-id="UX8rdqoGTooWu6HH6SZ0wg"><strong data-page-node-id="4GK2ISifYR8K0KCl0G6B1y">7</strong></td>
+<td data-page-node-id="qvEmacE8E3GFKKTH4OlP14"><strong data-page-node-id="bGxp8gvS9W3mltcmR2OB4v">用户研究要提前设计，不能 09-27 才临时找人</strong></td>
+<td data-page-node-id="BIxcLxDAwyyFxnA3LtmjkY">n≥10 双盲评测约人 + 问卷 + 统计至少要 5 天</td>
+<td data-page-node-id="Ry5I4QInWaEyKWE1zHm7hp">09-20 前完成问卷设计与人员预约，数据 09-26 开始采集</td>
+</tr>
+<tr data-page-node-id="j0GAmZh98n7z2SrsBn2BCe">
+<td data-page-node-id="qFAuWyxhAW0lz3cr5G5FH7"><strong data-page-node-id="aLDuQ9z0AEk2WQW1xvN7bE">8</strong></td>
+<td data-page-node-id="MX7essEqspOyllMexSDtcu"><strong data-page-node-id="XRry40V2Mwq47aHW4COnuI">Model Registry 必须带指标与 fallback 字段</strong></td>
+<td data-page-node-id="CDfmixsIB3Xy9c2fpUbPOB">"换权重"如果没有记录，实验表对不上交付物</td>
+<td data-page-node-id="NFNCUgiEwsvIhlvMEvk8p8"><code data-page-node-id="jG1Wdg5xMsWXNUxWnHp3gz">model_registry.yaml</code> 由 A 组维护，B 组每次产出权重提 PR 更新</td>
+</tr>
+<tr data-page-node-id="RRhpFlLa4NWVC0NNqZNII4">
+<td data-page-node-id="05yMAXQEyU3g5ePvbt9bHQ"><strong data-page-node-id="VbATWSvZAhm9oOaFMjh57R">9</strong></td>
+<td data-page-node-id="VSgoxhtGA0LqQ6xTnu8dGF"><strong data-page-node-id="PN07Bh2vIWSKAC7AbFkEQQ">失败案例集要当作正式交付物</strong></td>
+<td data-page-node-id="iwFUtHBzemc2bYmd0QAxn4">答辩时"我们分析了 5 类失败"比"我们效果很好"更有说服力，也是后续论文素材</td>
+<td data-page-node-id="HPMj1ZDucQeSWnSycdYCal">B8 至少 5 组，含归因（数据 / 方法 / 参数 / 无效提示）</td>
+</tr>
+<tr data-page-node-id="0wmYlThFJJPYZYcw2CvwsB">
+<td data-page-node-id="LL1qIpFchVKOtRmwqvJKQu"><strong data-page-node-id="KFJGHH5diNI6B0jCStqchM">10</strong></td>
+<td data-page-node-id="lkEOEslQjQLQOD3UevQs1K"><strong data-page-node-id="2x9nFqigMWEEDfroLFDTaT">成本与算力要建预算表</strong></td>
+<td data-page-node-id="dKO0o0M0HmatGF0nlGJs1s">租卡无预算容易在 09-20 后发现超支且没成果</td>
+<td data-page-node-id="8tgzwzkwaMRFZMsStDX33O">建 <code data-page-node-id="laTT0jM3NuPUmEVqsqI1Ii">docs/budget.md</code>，记录每次租卡：时长、单价、用途、产出 checkpoint、是否达标</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sec-6-2-风险登记表" data-page-node-id="3gBEL9SA8opYq4iZf7ZzhN">6.2 风险登记表</h2>
+<table data-page-node-id="wDQp8kiv2ZSaydrd2ttvog">
+<thead data-page-node-id="Bdk2kt1v0xGdaPGO9q6xs4">
+<tr data-page-node-id="rd5DSvEAIwvn7D84LFHic3">
+<th data-page-node-id="G3jijaVayPpOEZD5UgBWQm">风险</th>
+<th data-page-node-id="54CpQZdW7OyFPoVUx9u3dP">概率</th>
+<th data-page-node-id="Lbuzbgg4kSuafOEagIbSKO">影响</th>
+<th data-page-node-id="yegTHbpAeh5HygEWmEr05n">对策</th>
+</tr>
+</thead>
+<tbody data-page-node-id="0DN7b67InpZKVpTvC7DB0p">
+<tr data-page-node-id="rv9SX4DyJVDNZERuQxKjej">
+<td data-page-node-id="AHCmsCUhtEkEVESYGYxK7B">外部算力不可用 / 被抢占</td>
+<td data-page-node-id="kZ1KyWTi1gWxjT1CSUJDXx">中</td>
+<td data-page-node-id="Dm2wbdumepa4JazHRx7GWZ">高</td>
+<td data-page-node-id="DeWFWzElxw1GthOd3uaiJM">短任务 ≤24h + 断点续训；实验室服务器夜间兜底；09-10 就启动第一次训练留缓冲</td>
+</tr>
+<tr data-page-node-id="lt7h7mQ8hla5mwlNV27umn">
+<td data-page-node-id="B8jzhzknDjMBm4w61XqIIL">训练效果不达预期</td>
+<td data-page-node-id="LkIhTDgo9zwBfLGQ2Em27D">中</td>
+<td data-page-node-id="banacvbw4kqmUUYXH4n7t8">中</td>
+<td data-page-node-id="C7mljjpFTAG6Roi28XEh6D">指标口径分"整体"与"难例子集"，难例子集提升也可作为有效结论；失败案例同样可写</td>
+</tr>
+<tr data-page-node-id="OKCOFIqcEDhyngvxs7OUFZ">
+<td data-page-node-id="Qrg02RllOqawg5iR36RRjU">多轮编辑退化（EdiVal 已验证的现象）</td>
+<td data-page-node-id="gfDQ124E7g8eYILNKrl1AJ">高</td>
+<td data-page-node-id="0ZpymK8rjC0l2mdWi9uvKy">高</td>
+<td data-page-node-id="JvvcwHkJxWvyH8RHhtGFpd">这正是本课题的研究点：DAG + 版本树 + 条件回滚；同时限制单轮 Planner 只做增量修改</td>
+</tr>
+<tr data-page-node-id="3UnR2mChfjEBzF87XQpgen">
+<td data-page-node-id="UWR9pX3GsXb7d6ReDfa91S">端到端延迟超 10s</td>
+<td data-page-node-id="Sy9i5fQCTXnFMme1Vlq4Hj">中</td>
+<td data-page-node-id="8FWZ8UoFNmlYXegId7nVxv">中</td>
+<td data-page-node-id="Pf5vDNly1THeWo9aYM55LQ">草稿 / 精修两级出图；节点并行（抠图与背景生成可并行）；低精度档位</td>
+</tr>
+<tr data-page-node-id="8FDoK0LlEZHXXFI0G4Uw1X">
+<td data-page-node-id="zOe5RHt6DZCbR5LvCcVJz0">中文 ASR 在噪声环境退化</td>
+<td data-page-node-id="P1Rd5bFLcDNrS1PN8Hgbj6">中</td>
+<td data-page-node-id="lCTR0uazmoHQ942nc1ahon">中</td>
+<td data-page-node-id="efdIFTvXGplWYcCUayr36l">本地 VAD + 二次确认 + 文本兜底；Demo 现场用安静环境</td>
+</tr>
+<tr data-page-node-id="9RvXXl4zT52RYnv2U1HjV1">
+<td data-page-node-id="7F23FFzGq39zA8RDulP2g3">人像数据授权合规</td>
+<td data-page-node-id="mEnf7ej1jj6AfvlXdus4bU">低</td>
+<td data-page-node-id="un8KsymD28ZgtTDHsVHJ5q">高</td>
+<td data-page-node-id="SO660zTbcpBVKWtGincbBL">09-09 前确认数据来源与授权范围；公开数据集优先；Demo 使用自拍或授权素材</td>
+</tr>
+<tr data-page-node-id="E04XK4SmjwOoD1aFTckKo6">
+<td data-page-node-id="MlnMqeqvLjiXlOH54XFLZS">三人进度不同步导致集成失败</td>
+<td data-page-node-id="FuRccr1OFCHzpJINzzMb7L">中</td>
+<td data-page-node-id="PKEKIOiTbWFoTuVOcnXsVU">高</td>
+<td data-page-node-id="nlWzwBlmqwZC78LkeoTliV">每周三 / 周日固定集成日；接口先行；<code data-page-node-id="1F2j1yoDltGRs5v7ycepsk">dev</code> 分支冒烟</td>
+</tr>
+<tr data-page-node-id="aUXdRbH5HkXUTNgttcRhm3">
+<td data-page-node-id="LKNgizKudDsmtI4RxEw3zl">国庆假期压缩交付工期</td>
+<td data-page-node-id="5DtC41LZWaxBdE1n5GouZz">高</td>
+<td data-page-node-id="8TDfBGwPCJIWoidsHLQNHV">高</td>
+<td data-page-node-id="beB5dA86U8KyseRqvoOIFK">09-30 封版；10-01~10-07 只安排报告撰写类可异步任务</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sec-6-3-环境新坑与规避-实践层面-提前规避可省数天" data-page-node-id="uKfx1ahwQbgjBj0DcSkBpg">6.3 环境新坑与规避（实践层面，提前规避可省数天）</h2>
+<table data-page-node-id="FJRhdvrO3TGCFwcneYtcl8">
+<thead data-page-node-id="NVhO4rzYKS7ZDAanHNreXl">
+<tr data-page-node-id="FcHo9EBJktaG8on3IoSYsl">
+<th data-page-node-id="UQt4HdFFyjxCCDir5vZDhJ">坑</th>
+<th data-page-node-id="Hi61F7cROnVBkoBygh8m80">表现</th>
+<th data-page-node-id="xEJqyOusN2vHXPT65LvJz0">规避方式</th>
+</tr>
+</thead>
+<tbody data-page-node-id="UtGShQ4PN0NUMt1BURCjgq">
+<tr data-page-node-id="w3MIaJTG17IAd5ToZ3ZY0x">
+<td data-page-node-id="nwviX2cidB9IToWqairuIh"><strong data-page-node-id="jCTqwRzX2mMQerKTaaudmr">中文路径 / 中文文件名</strong></td>
+<td data-page-node-id="4KCCJ5rugTb0eIkvG5VGF1">Windows 上 Python / Docker 挂载报编码错误，Linux 训练机上路径乱码</td>
+<td data-page-node-id="GQg6mFBoHSYg1PJI4RjZLa">全项目禁用中文路径与文件名（规范 N7）</td>
+</tr>
+<tr data-page-node-id="AefxVYMG3rhAFlb3Cmr4FT">
+<td data-page-node-id="4YSErrjxEbpDYUCJyPjIIX"><strong data-page-node-id="ZDmxlqGHePCUAoTfXNSiLE">Windows / Linux 依赖不一致</strong></td>
+<td data-page-node-id="9pkPg3Ku3F0A2DBaMI7AcJ">本地跑通，租卡机器上 torch 版本冲突、CUDA 不匹配</td>
+<td data-page-node-id="rZu8UZBjmbgvyZgohhH6L3">Docker 镜像锁死版本 + <code data-page-node-id="uIo1f59T8RpoavpV42bUZF">requirements-lock.txt</code>；本地先冒烟</td>
+</tr>
+<tr data-page-node-id="qw8AbddyCJJzk1srae9YE2">
+<td data-page-node-id="lnpjd5v6JUtuWlqAXOEtpH"><strong data-page-node-id="MvortXDArv9IXnq7KyLGDw">Git 误传大权重</strong></td>
+<td data-page-node-id="um2IBW7djHYp2kyIS1YV7S">仓库体积爆炸、push 失败</td>
+<td data-page-node-id="0oV7LvbN3hH9fDA4DPySNf"><code data-page-node-id="331Cc9uHcBQ1s3EH1XG4EG">.gitignore</code> 提前配置 + Git LFS；权重只提交路径与元信息</td>
+</tr>
+<tr data-page-node-id="MXPSWrHG66dCbu2GesLCVV">
+<td data-page-node-id="SBu45cY0OiW4T0pIvCcF6T"><strong data-page-node-id="ZihoyhDPd5gVb9Fm45xXqA">显存不足（OOM）</strong></td>
+<td data-page-node-id="vsO1Sjf0QXHoR8ddq61hAA">抠图 + 扩散同进程抢占显存</td>
+<td data-page-node-id="eEMWEkAJlzoIUoGhltOHgD">各工具独立进程 / 独立容器；显存上限参数化；L1 降级自动切低档位</td>
+</tr>
+<tr data-page-node-id="VoM5Tsk5Zr0TSr3HUSmzwz">
+<td data-page-node-id="dHfUKMvo3fY1srYCdD3mLS"><strong data-page-node-id="9bD5F5wIVcuC180UeZ8Lq7">Docker 挂载路径权限</strong></td>
+<td data-page-node-id="uGiv0TUfxszZNb0n7ko6Zl">容器内无法写产物目录</td>
+<td data-page-node-id="SRc4LB1VihEquECsQuX4Qk">统一挂载到 <code data-page-node-id="N85SxkafPySKy4nnBwJdme">/workspace/artifacts</code>，启动脚本 <code data-page-node-id="lctGzJBv6HweOUzb0uxObU">chmod</code> 并验证可写</td>
+</tr>
+<tr data-page-node-id="kJBuslLl3Lpq00PDqeBC2f">
+<td data-page-node-id="klG1nOZzDp9jpWxBpsFs9O"><strong data-page-node-id="XyfmD5ZDVBJmUp2Y2n8Q5R">模型权重下载失败 / 慢</strong></td>
+<td data-page-node-id="ZOWQShE9M1KFmcqUYvb5oU">租卡机器无代理，HuggingFace 拉取超时</td>
+<td data-page-node-id="0EzovyaFgnSpKXccLzPIoO">提前下载到对象存储，镜像启动脚本从内网拉取</td>
+</tr>
+<tr data-page-node-id="PalrJeXxTQDBI8hh5vNJoW">
+<td data-page-node-id="Mrfoz7eHHgFFV7MO8qMsG5"><strong data-page-node-id="QBBfssiemz99aFJeSZW9MM">ASR 与扩散模型抢 GPU</strong></td>
+<td data-page-node-id="SSgS7Mc6OlguWLQxpQ0zMV">语音延迟飙升</td>
+<td data-page-node-id="RvDi8oh9NMdAWVKoZUZ4EF">语音模块独立进程 + 固定显存预留，或 CPU 小模型方案</td>
+</tr>
+<tr data-page-node-id="fmUjKYRYDalmi7B2AqfnfI">
+<td data-page-node-id="aapq0sZsIzJUq4CBDk0yss"><strong data-page-node-id="4GuWAihIjOtgP6YE4NkMr8">实验记录了但复现不了</strong></td>
+<td data-page-node-id="ed4LwxwKcvVkNPp7NR4DFg">报告写不出确切超参</td>
+<td data-page-node-id="rETYb5jrCJgiO6a4TYgg9l">规范 N5：<code data-page-node-id="55z1LTKE4jxz5QOcyoifN7">config.yaml</code> + <code data-page-node-id="um8nkDFGBo8da0DBTe21cs">train.log</code> + <code data-page-node-id="B8A0h2ZoE1TdcoRlTif148">eval.csv</code> 三件套，随实验提交</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sec-6-4-未来-72-小时行动清单-从今晚开始" data-page-node-id="JJkpS0xZhLOYTzOAlujqgK">6.4 未来 72 小时行动清单（从今晚开始）</h2>
+<table data-page-node-id="F6vsaiLMzFEhpy1oWyy4ci">
+<thead data-page-node-id="Y17mRmEjyg9ors1tnbLOGL">
+<tr data-page-node-id="F6zXpw49hrTDHqKAZF2lam">
+<th data-page-node-id="RGqxqBZQA7cbCdRZKM3Ij4">时间</th>
+<th data-page-node-id="BFifPCwACS3BFlUzr8czdx">A 组</th>
+<th data-page-node-id="uAWrkZ382m1jUZtmaZq6cC">B 组</th>
+<th data-page-node-id="pEeBa6AUeqLAP7OEigrdcJ">C 组</th>
+</tr>
+</thead>
+<tbody data-page-node-id="4uNgULncDy3FcgCOxqhocP">
+<tr data-page-node-id="3TTHxCYYYyAuPhHSXwEJKB">
+<td data-page-node-id="yHBGQGKKSUJvlYCLWA9iHg"><strong data-page-node-id="9Srgi53xaWfTFH4oaujmlH">09-08 晚</strong></td>
+<td data-page-node-id="vbdItbYwFRgdK1Lr4lMXUp">建仓库、分支保护、PR 模板；起草 T01–T08 Schema 骨架</td>
+<td data-page-node-id="yR1zzFlwvQWxEm16q7bxYQ">装环境，跑 BiRefNet 推理冒烟，出第一张 alpha 图</td>
+<td data-page-node-id="HoNJKv94NTn99DycOCGt8k">前端脚手架 + 首页静态原型（上传 + 一句话）</td>
+</tr>
+<tr data-page-node-id="IdRshqiW064K2Qg1TAJBB5">
+<td data-page-node-id="3H9F1BDLQPT0whtLj7ysbF"><strong data-page-node-id="kixjbMWnbllYBMFwrPc8hD">09-09 上午</strong></td>
+<td data-page-node-id="bWuhlpCgqzSBEBHmbYL2V7">Schema 评审会，B 组确认可实现；定 Planner 输出 JSON 格式</td>
+<td data-page-node-id="vPwgChsNnvPSLrQRy9WwW0">数据集四集划分完成，难例清单建表</td>
+<td data-page-node-id="rfbPKYG3BUjeFwItQkYWhR">语音模块技术选型验证（本地 ASR 跑通）</td>
+</tr>
+<tr data-page-node-id="crGnKjqLYEiX6aBglAAChq">
+<td data-page-node-id="zWDH7SRBA3BXF4tX3QimLf"><strong data-page-node-id="h8h2eECSw3awCoTM86bnWH">09-09 下午</strong></td>
+<td data-page-node-id="AjDnPJK7M4pGUFt18SrycY">A3 Executor 骨架（不接真实工具，先跑 mock DAG）</td>
+<td data-page-node-id="80bZSaTAqKahhfSxcFKt0T"><strong data-page-node-id="YywVD69xQoKsoEPKTiYwm5">数据集冻结</strong>（24:00 硬截止）</td>
+<td data-page-node-id="8BTtHAI1LACChPTF9AbfhX">三栏工作台静态布局</td>
+</tr>
+<tr data-page-node-id="cQ1nQPzeCc3Umyd902pBkn">
+<td data-page-node-id="qLalVOJySrF87Gz32sKmPC"><strong data-page-node-id="lelnQYMZmHdJdr70oB9Tx3">09-09 晚</strong></td>
+<td data-page-node-id="GDHqUs1imVDzD29yEFngcv">第一次集成日：<code data-page-node-id="OEmDpqHI52QJ2eEPgDdAEY">dev</code> 分支端到端冒烟（mock 版）</td>
+<td data-page-node-id="5BxJa3uwZ2X9UQVb8vNLKU">准备 09-10 训练：冒烟脚本 + Docker 镜像</td>
+<td data-page-node-id="1pM8PjEHqpZrJqnKibrhGH">首页原型可点，接 mock 数据</td>
+</tr>
+</tbody>
+</table>
+<p data-page-node-id="a8DP0BuJ2wK785xHoSR7bD"><strong data-page-node-id="N4SZKqA1aIIGRYprl5IKoJ">09-09 24:00 冻结检查（三项全绿才进入下一阶段）</strong>：</p>
+<ul data-page-node-id="A8vbnSZxCBleUWvoVsruIe">
+<li class="task-item" data-page-node-id="9gGa7oz3xDi57VCFAiWtJU"><input type="checkbox" disabled data-page-node-id="6EapA41Eg61JFieZeBrDCZ"> 8 个工具 Schema 全部提交并通过评审</li>
+<li class="task-item" data-page-node-id="xHUh5T31GBpUIGQmOhVZfA"><input type="checkbox" disabled data-page-node-id="Pbh7M9jaBxp6NS8ZWGzy3E"> 数据集四集划分完成、难例清单达标、授权确认</li>
+<li class="task-item" data-page-node-id="kBF2KTlNtb157mTSHJ9kKE"><input type="checkbox" disabled data-page-node-id="5cDnDOWFwYOAsKKDAe7fhV"> 训练集 Docker 镜像可离线构建，本地冒烟通过</li>
+</ul>
+<hr  data-page-node-id="wU3zuzUmM4HnzGppIjscBa"/>
+<h2 id="sec-附录-A-术语表" data-page-node-id="CFDGCGkITNAdSxoqa6GPMV">附录 A：术语表</h2>
+<table data-page-node-id="0NyVYNbBhfsJtLsnQ3S47Z">
+<thead data-page-node-id="hDfNBhCjwie0QIZ3UFFP0J">
+<tr data-page-node-id="eQbioF56sjTukk57Z3VvCv">
+<th data-page-node-id="8HoP3FCskRWcMTZMcRAODl">术语</th>
+<th data-page-node-id="e3hATzMiSv65uQZleR6Otd">含义</th>
+</tr>
+</thead>
+<tbody data-page-node-id="L5atj64ExBpkJ6aiuPYG2p">
+<tr data-page-node-id="PVI3qu50CSNQRgROif5DxZ">
+<td data-page-node-id="SerfRLBAm6335YSlqTqZf4"><strong data-page-node-id="YGRynUFxqIJPTQyYXSLSqA">DAG</strong></td>
+<td data-page-node-id="J7juUdDCAkIwTYE5OLxCpT">有向无环图，本项目中指执行计划（节点=工具调用，边=依赖）</td>
+</tr>
+<tr data-page-node-id="qjAIGPFo5bfDcojdJZcExp">
+<td data-page-node-id="tVcZkGdrfylbRc9AWCyvRQ"><strong data-page-node-id="fAqcUDAiU2oby2Z49TbE2z">Planner</strong></td>
+<td data-page-node-id="kDcUG4MZEHxbFBSDxDRfjZ">将用户多模态输入解析为结构化 DAG 的模块</td>
+</tr>
+<tr data-page-node-id="l4jpINxeQ1gAuy8TV9EHCM">
+<td data-page-node-id="vA0V5YjID8jHV8fTgAif3q"><strong data-page-node-id="HjrkJlKiIETaEnxX8zdFH1">Critic</strong></td>
+<td data-page-node-id="2s72rRHeajyKZILxt9Qvcx">对合成结果多维打分并触发重规划的模块（VLM + 客观光照一致性分）</td>
+</tr>
+<tr data-page-node-id="BEL2MrpN1NonsW4tXdcWrk">
+<td data-page-node-id="e9JzQ77ITidvnFbHP9pqX2"><strong data-page-node-id="KB1i124Lg5TDyxUMhCHThf">条件回滚</strong></td>
+<td data-page-node-id="SnNEAe3oyq5lYzS3rHocKG">只回滚某个历史节点，保留其他节点的当前状态，并重跑其下游</td>
+</tr>
+<tr data-page-node-id="GQEVPsCWEPz8LQYuWgPzlf">
+<td data-page-node-id="8JFt7jwspH0O7O8ALrS7EA"><strong data-page-node-id="LudUF95C9fzLPhWLtlp88P">Matting / Alpha</strong></td>
+<td data-page-node-id="gv8xj1cyiAlaNUP0OatKhM">估计每像素前景不透明度 α，I = αF + (1−α)B</td>
+</tr>
+<tr data-page-node-id="PFrJg7s7BEYoKy10hbrJCn">
+<td data-page-node-id="rSvLqvQA26ZBu70zYANrfZ"><strong data-page-node-id="NYuOBLhQiF0hBMCZhlStsh">Relighting</strong></td>
+<td data-page-node-id="Jihb8Rj4SEoYYSIAdEZZBj">按目标环境光重新渲染前景光照</td>
+</tr>
+<tr data-page-node-id="uLxFnjXjjdDPDGauAzHDul">
+<td data-page-node-id="VSKJ5Nh2Wm8FQ9S2c7GRJB"><strong data-page-node-id="FbeY9K6X8UhXifwRUim6QF">接触阴影</strong></td>
+<td data-page-node-id="YbyjgZMrAPRBWpwJgQBo6G">前景与背景接触处因遮挡产生的阴影，是消除"贴纸感"的关键</td>
+</tr>
+<tr data-page-node-id="T7T6OFo6wVF1daO0ExtYKo">
+<td data-page-node-id="x7J2rWSEVxCeBkbTEWxvPB"><strong data-page-node-id="XCBC7UghlXAFvtL8oTYMGC">Harmonization</strong></td>
+<td data-page-node-id="iykvo5WErX1RRE2CHUslRQ">前后景色彩 / 噪点 / 景深统一</td>
+</tr>
+<tr data-page-node-id="yZxzf02v3d8vDpXOgWy8Qp">
+<td data-page-node-id="w8QKJ61wBdAiLANgl1MXcV"><strong data-page-node-id="mlkaf5E9YeJEOz50c3TYRt">SH（球谐）</strong></td>
+<td data-page-node-id="wABdjFAoZsF7QWYG0VF0yR">用 9 个系数低频近似环境光照的表示</td>
+</tr>
+<tr data-page-node-id="B5qzPWw9GVDn8IIj8MTurG">
+<td data-page-node-id="99MFwYKEr4rA1H0tPcFGzY"><strong data-page-node-id="h5CsWEKDG3wOTMnOcMk2gH">VAD</strong></td>
+<td data-page-node-id="vwgMnpbuweyOsdP3CwEIcT">语音端点检测，判断用户是否说完</td>
+</tr>
+<tr data-page-node-id="empGOwP2Q0eu9EKWe1WJ1Y">
+<td data-page-node-id="L9IInxcLBCZdh84rK52QmB"><strong data-page-node-id="nQNMno1coR5CYAxwyiGxPQ">Model Registry</strong></td>
+<td data-page-node-id="TbTWv50fxJID8YgkN6Mz5L">模型版本登记表，含指标与 fallback 策略</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sec-附录-B-实验记录模板" data-page-node-id="wu0OVKPK7Eo4WZOIpSIDXD">附录 B：实验记录模板</h2>
+<pre data-page-node-id="SCUKMBiBGX4sBHDfrc0d2Y"><code class="language-markdown" data-page-node-id="r5SxBimFnMmf05lqeoPgai"># EXP-YYYYMMDD-&lt;方向&gt;-&lt;序号&gt;
+
+## 一句话结论
+（改进 / 退步 / 无效，以及关键数字）
+
+## 配置
+- 数据：
+- 超参：
+- 硬件：
+- 代码版本（commit）：
+
+## 结果
+| Model | SAD ↓ | MSE ↓ | Grad ↓ | Conn ↓ |
+|---|---:|---:|---:|---:|
+
+## 视觉对比
+（before / after / gt 三图并列）
+
+## 失败案例
+（≥1 组，附归因）
+
+## 下一步
+</code></pre>
+<h2 id="sec-附录-C-变更记录" data-page-node-id="Adx5RYrGAPZl0j63H1R40L">附录 C：变更记录</h2>
+<table data-page-node-id="eJ9zyE5ZsQ3z1VALhdAulN">
+<thead data-page-node-id="UOMBKqDXmOfDzygALHyVIT">
+<tr data-page-node-id="H839fPnVUumet2Ix25AOF1">
+<th data-page-node-id="EcMLe1d6Udu5WAWDAPa93D">版本</th>
+<th data-page-node-id="Qw3ZjGMj17avspmDTOjk9O">日期</th>
+<th data-page-node-id="FJ0Pkqdutv07zsAazkc2W8">变更内容</th>
+<th data-page-node-id="lqgS5M7RnCTVoA1jIJTk4h">作者</th>
+</tr>
+</thead>
+<tbody data-page-node-id="DPr07xL0iQjLswllICJWQO">
+<tr data-page-node-id="3XS6gzAqQW4jqSBFTe6Er4">
+<td data-page-node-id="v3eOgDB5NxGjYhczr72rVo">V1.0</td>
+<td data-page-node-id="xjhBx1XB9UQBhyEgoG7bcY">2026-09-08</td>
+<td data-page-node-id="vBnMrGQJtbufw1YLHVlWD4">首版：总规范 + 分工 + 指标 + WBS + 架构 + 实现方案 + 改进建议</td>
+<td data-page-node-id="R9pvQytxuKVBj8Y7eev8rx">—</td>
+</tr>
+</tbody>
+</table>
+<hr  data-page-node-id="2MIoHzLOqd8tMuKnWAJPUg"/>
+<blockquote data-page-node-id="1wjiGf0zMZ60ZY7t5DI6Vb">
+<p data-page-node-id="Kb5FrKbC5FwTcWcZbm8O19"><strong data-page-node-id="UE4xgPR0Iq2wZ1MrOJtMhw">一句话收尾</strong>：不要追求"功能最多"，要追求一条完整的证据链——
+<strong data-page-node-id="XteN74As2xAjpxxgNqaOiw">有数据 → 有 Baseline → 有训练 → 有改进 → 有量化指标 → 有光影方法 → 有 Agent → 有自动评估 → 有多轮交互 → 有完整系统。</strong>
+这样项目才从"三个人做了一个 AI 图片工具"，提升为"三个人完成了一个有算法实验、有 Agent 规划、有交互系统、有量化评价的多模态图像合成研究系统"。</p>
+</blockquote>
+    </article>
+  </main>
+</div>
+<script>
+  // 侧边栏高亮
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var targets = links.map(function(a){
+    return document.getElementById(decodeURIComponent(a.getAttribute('href').slice(1)));
+  }).filter(Boolean);
+  function onScroll(){
+    var y = window.scrollY + 120, idx = 0;
+    for (var i=0;i<targets.length;i++){
+      if (targets[i].offsetTop <= y) idx = i;
+    }
+    links.forEach(function(a){ a.classList.remove('active'); });
+    if (links[idx]) {
+      links[idx].classList.add('active');
+      var s = document.getElementById('side');
+      var r = links[idx].getBoundingClientRect(), sr = s.getBoundingClientRect();
+      if (r.top < sr.top + 10 || r.bottom > sr.bottom - 10) {
+        links[idx].scrollIntoView({block:'center'});
+      }
+    }
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  document.getElementById('topBtn').onclick = function(){ window.scrollTo({top:0, behavior:'smooth'}); };
+  var mb = document.getElementById('menuBtn');
+  if (mb) mb.onclick = function(){ document.getElementById('side').classList.toggle('open'); };
+</script>
+</body>
+</html>

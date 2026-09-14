@@ -1,0 +1,58 @@
+{
+  "id": "T07",
+  "tool": "enhance",
+  "version": "1.0",
+  "title": "景深/噪点/细节增强",
+  "description": "按深度图做景深虚化与细节增强，使前景与背景的成像风格统一（可选节点）。",
+  "owner": "接口=A / 实现=B",
+  "deps_models": ["可选：depth-aware blur / detail enhancement"],
+  "input": {
+    "type": "object",
+    "required": ["image"],
+    "properties": {
+      "image": { "type": "string", "description": "输入图 URI" },
+      "depth_map": { "type": "string", "description": "深度图 URI（T02 产物，可选）" },
+      "strength": { "type": "number", "description": "增强强度 0~1，默认 0.5" },
+      "effects": {
+        "type": "array",
+        "description": "B 组特效链（可选，按序生效）：spotlight 聚光 / bokeh 散景 / fog 雾效 / vignette 暗角 / color_temp 色温滤镜 / depth_blur 区域虚化",
+        "items": {
+          "type": "object",
+          "required": ["effect"],
+          "properties": {
+            "effect": { "type": "string", "enum": ["spotlight", "bokeh", "fog", "vignette", "color_temp", "depth_blur"] },
+            "params": { "type": "object", "description": "特效参数，如 {intensity: 0~1}、color_temp 的 {mode: warm|cool} 等" },
+            "region": {
+              "type": "object",
+              "description": "区域选区（缺省全图）",
+              "properties": {
+                "type": { "type": "string", "enum": ["full", "box", "polygon"] },
+                "xyxy": { "type": "array", "items": { "type": "number" }, "minItems": 4, "maxItems": 4 },
+                "points": { "type": "array", "items": { "type": "array", "items": { "type": "number" }, "minItems": 2 } }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "options": {
+    "type": "object",
+    "properties": {
+      "quality": { "type": "string", "enum": ["draft", "normal", "fine"], "default": "normal" }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["enhanced_png"],
+    "properties": {
+      "enhanced_png": { "type": "string", "description": "增强结果 URI" }
+    }
+  },
+  "errors": [
+    { "code": "E_ENHANCE_FAILED", "message": "增强失败", "retryable": true },
+    { "code": "E_INVALID_INPUT", "message": "输入缺失或 URI 无法解析", "retryable": false }
+  ],
+  "latency": { "p50_ms": 600, "p95_ms": 1500, "timeout_ms": 10000 },
+  "notes": "默认不出现在主链路，Planner 识别到'景深/虚化/细节'关键词或精修档位时加入。2026-09-13 合并 B 组引擎：深度虚化修正为近清晰/远虚化，并新增 effects 特效链（bsrc/fx）。"
+}

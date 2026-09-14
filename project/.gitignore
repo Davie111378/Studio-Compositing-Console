@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# 产物与数据（大文件禁止入库，规范 N6）
+data/artifacts/
+data/runs/
+data/matting/*
+!data/matting/README.md
+data/composition/*
+!data/composition/README.md
+data/lighting/*
+!data/lighting/README.md
+data/instruction/*
+!data/instruction/README.md
+
+# 模型权重（只提交路径与元信息，规范 6.3）
+*.pth
+*.safetensors
+*.ckpt
+*.bin
+!model_registry.yaml
+
+# 实验（保留 README 与指标，丢大图）
+experiments/**/visual/
+experiments/**/checkpoints/
+
+# 前端 / Node
+node_modules/
+dist/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 密钥
+.env
+*.key
+
+# 工具状态（本机）
+.mimosa/

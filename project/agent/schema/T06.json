@@ -1,0 +1,39 @@
+{
+  "id": "T06",
+  "tool": "harmonize",
+  "version": "1.0",
+  "title": "前后景和谐化",
+  "description": "统一前后景色彩/噪点/景深（DoveNet/Harmonizer 思路，或扩散 inpainting 局部和谐化），消除色彩割裂感。",
+  "owner": "接口=A / 实现=B",
+  "deps_models": ["DoveNet / Harmonizer / 扩散 inpainting"],
+  "input": {
+    "type": "object",
+    "required": ["composite_png", "mask_png"],
+    "properties": {
+      "composite_png": { "type": "string", "description": "合成图 URI（T05 产物）" },
+      "mask_png": { "type": "string", "description": "前景 mask URI" },
+      "strength": { "type": "number", "description": "和谐化强度 0~1，默认 0.7" }
+    }
+  },
+  "options": {
+    "type": "object",
+    "properties": {
+      "quality": { "type": "string", "enum": ["draft", "normal", "fine"], "default": "normal" }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["harmonized_png"],
+    "properties": {
+      "harmonized_png": { "type": "string", "description": "和谐化结果 URI" }
+    }
+  },
+  "errors": [
+    { "code": "E_HARMONIZE_OOM", "message": "显存不足", "retryable": true },
+    { "code": "E_HARMONIZE_TIMEOUT", "message": "超时", "retryable": true },
+    { "code": "E_HARMONIZE_WEIGHT_MISSING", "message": "权重缺失（L3 回落）", "retryable": false },
+    { "code": "E_INVALID_INPUT", "message": "输入缺失或 URI 无法解析", "retryable": false }
+  ],
+  "latency": { "p50_ms": 1500, "p95_ms": 4000, "timeout_ms": 30000 },
+  "notes": "Critic Color 维度不达标时触发本工具以更高精度档位重跑。"
+}

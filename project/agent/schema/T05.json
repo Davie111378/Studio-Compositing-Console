@@ -1,0 +1,42 @@
+{
+  "id": "T05",
+  "tool": "shadow_generate",
+  "version": "1.0",
+  "title": "接触阴影生成与合成",
+  "description": "按光源方向 + mask 形态生成接触阴影并完成合成（foreground + shadow + background -> composited）。先做程序化降级版（光源方向 + 几何锚定），再做扩散版（物理推理阴影）；程序化版同时是 B6 A 组基线（规范 5.3）。",
+  "owner": "接口=A / 实现=B（程序化 -> 物理推理）",
+  "deps_models": ["可选：shadow diffusion（后期）"],
+  "input": {
+    "type": "object",
+    "required": ["foreground_png", "background_png", "mask_png", "light_dir"],
+    "properties": {
+      "foreground_png": { "type": "string", "description": "前景 URI（通常为 T04 重打光产物）" },
+      "background_png": { "type": "string", "description": "背景 URI（T02 产物）" },
+      "mask_png": { "type": "string", "description": "前景 mask URI（T01 产物）" },
+      "light_dir": { "type": "object", "properties": { "azimuth": { "type": "number" }, "polar": { "type": "number" } }, "required": ["azimuth", "polar"] },
+      "shadow_strength": { "type": "number", "description": "阴影强度 0~1，默认 0.6；'阴影轻一点'时调低" },
+      "geometry": { "type": "object", "description": "几何锚定信息（可选）：地面接触点/足底包围盒" }
+    }
+  },
+  "options": {
+    "type": "object",
+    "properties": {
+      "quality": { "type": "string", "enum": ["draft", "normal", "fine"], "default": "normal" }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["shadow_png", "composited_png"],
+    "properties": {
+      "shadow_png": { "type": "string", "description": "独立阴影层 URI（便于 debug 与消融）" },
+      "composited_png": { "type": "string", "description": "合成结果 URI（fg+shadow+bg）" }
+    }
+  },
+  "errors": [
+    { "code": "E_SHADOW_FAILED", "message": "阴影生成失败", "retryable": true },
+    { "code": "E_SHADOW_TIMEOUT", "message": "超时", "retryable": true },
+    { "code": "E_INVALID_INPUT", "message": "输入缺失或 URI 无法解析", "retryable": false }
+  ],
+  "latency": { "p50_ms": 800, "p95_ms": 2000, "timeout_ms": 20000 },
+  "notes": "注意：与总规范 A1 表的差异——本工具内部完成合成（输入改为 foreground/background 分离），避免'先合成后加影'的排序耦合；composited_png 语义不变。已评审确认。"
+}

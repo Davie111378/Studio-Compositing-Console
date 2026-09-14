@@ -1,0 +1,41 @@
+{
+  "id": "T04",
+  "tool": "relight",
+  "version": "1.0",
+  "title": "前景重打光",
+  "description": "把前景 RGBA 按目标环境光重新渲染（IC-Light 背景条件模式优先，规范 5.3），消除'贴纸感'的光照分量。",
+  "owner": "接口=A / 实现=B（IC-Light）",
+  "deps_models": ["IC-Light（对比：SwitchLight / DiLightNet）"],
+  "input": {
+    "type": "object",
+    "required": ["rgba_png", "light_dir"],
+    "properties": {
+      "rgba_png": { "type": "string", "description": "前景 RGBA URI（T01 产物）" },
+      "light_dir": { "type": "object", "properties": { "azimuth": { "type": "number" }, "polar": { "type": "number" } }, "required": ["azimuth", "polar"] },
+      "color_temp": { "type": "number", "description": "目标色温 Kelvin（缺省 5500）" },
+      "intensity": { "type": "number", "description": "目标强度 0~2（缺省 1）" },
+      "bg_hint": { "type": "string", "description": "背景图 URI（IC-Light 背景条件模式）" }
+    }
+  },
+  "options": {
+    "type": "object",
+    "properties": {
+      "quality": { "type": "string", "enum": ["draft", "normal", "fine"], "default": "normal" }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["relit_png"],
+    "properties": {
+      "relit_png": { "type": "string", "description": "重打光后的前景 RGBA URI" }
+    }
+  },
+  "errors": [
+    { "code": "E_RELIGHT_OOM", "message": "显存不足", "retryable": true },
+    { "code": "E_RELIGHT_TIMEOUT", "message": "推理超时", "retryable": true },
+    { "code": "E_RELIGHT_WEIGHT_MISSING", "message": "权重缺失（L3 回落）", "retryable": false },
+    { "code": "E_INVALID_INPUT", "message": "输入缺失或 URI 无法解析", "retryable": false }
+  ],
+  "latency": { "p50_ms": 3000, "p95_ms": 8000, "timeout_ms": 60000 },
+  "notes": "Critic Lighting 维度不达标时触发本工具以更高精度档位重跑（规范 3.1 A4 映射表）。"
+}

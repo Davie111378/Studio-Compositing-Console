@@ -1,70 +1,50 @@
-# 密钥与环境 — 严禁入库
-.env
-*.key
-
-# 大文件与产物
-outputs/
-data/ai_generated/
-data/video/*.mp4
-training/checkpoints/
-ai-service/src/matting/birefnet_official/
-__pycache__/
-*.pyc
+# ===== Personal / WorkBuddy (never upload) =====
 .workbuddy/
-presentations/
-logs/
-tmp/
-*.webm
-
-# 夜间批量中间态保留指标(json/csv), 排除帧图
-agent/night/out/frames/
-agent/night/out/*.png
-
-# === 补充排除（翻入仓库时新增） ===
-# Python 虚拟环境
+.mimosa/
+.zcode/
+node_modules/
 .venv/
 venv/
+__pycache__/
+*.pyc
+*.pyo
 
-# 构建产物
-dist/
+# ===== Secrets & config files (do not upload) =====
+.env
+.env.*
+*.local
+*.key
+*.pem
+id_rsa
+credentials*
+token*
+secrets*
+*secret*
 
-# Agent 训练用大模型权重（单文件近 1GB，超限且不入库）
-agent_training/models/
+# ===== Logs =====
+*.log
+_*.log
 
-# 第三方模型权重（onnx / safetensors 等大文件）
-third_party/LaMa/onnx/
-third_party/HumanMatting/onnx/
+# ===== OS / editor =====
+.DS_Store
+Thumbs.db
+*.swp
+ehthumbs.db
 
-# 通用大模型权重扩展名（全局兜底，防止权重意外入库）
-*.pt
-*.pth
-*.ckpt
-*.onnx
-*.safetensors
-*.bin
+# ===== Irrelevant school-handout PDFs (not the user's own reports) =====
+生产实习/生产实习/*.pdf
+生产实习/*.pdf
 
-# .env 示例模板必须入库，例外放行
-!.env.example
+# ===== Unrelated project: thesis-proposal materials (separate topic) =====
+开题材料/
 
-# === 超限大数据（体积超限且可脚本重生成 / 下载，不入库） ===
-# 合成数据集 (n_per_case×case 数千张图) 与第三方 coco_stuff，可由
-# training/scripts/synthetic_dataset.py 重新生成，或自行下载
-data/
+# ===== Unrelated project: ImageCompose UI/website (separate from this repo) =====
+imagecompose-site/
+ImageCompose_*.html
 
-# 实验产物大图：保留 csv/json/md 指标（答辩数字来源），仅排除图片
-# （对比图 / 网格图可由 training/scripts/visualize_comparison.py 等重生成）
-experiments/**/*.png
-experiments/**/*.jpg
-experiments/**/*.jpeg
-experiments/**/*.webp
-experiments/**/*.bmp
+# ===== Unrelated presentations (career planning / other projects) =====
+大学生职业生涯规划书PPT.pptx
+智裳行者*.pptx
 
-# === 数据集与评测图片（按用户要求：上传不包含任何数据集） ===
-# 合成数据集 + 第三方下载数据（已排除）与各类评测/样例图片
-data/
-绿幕图片/
-测试图片/
-数据集/
-
-# 绿幕抠图对：评测数据对，整目录不入库（其中第三方工具代码亦随之排除）
-绿幕抠图对/
+# ===== Stray processed artifacts =====
+processed_image_*.png

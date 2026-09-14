@@ -1,0 +1,35 @@
+{
+  "id": "T03",
+  "tool": "lighting_estimate",
+  "version": "1.0",
+  "title": "环境光分析",
+  "description": "从背景图估计环境光：球谐 SH9 系数 + 主方向光（方位角/仰角）+ 色温 + 强度。优先用现成光照估计器，不自研（规范 5.3）。",
+  "owner": "接口=A / 实现=B",
+  "deps_models": ["光照估计器（如 indoor/outdoor light estimator）"],
+  "input": {
+    "type": "object",
+    "required": ["bg_png"],
+    "properties": {
+      "bg_png": { "type": "string", "description": "背景图 URI（T02 产物）" },
+      "depth_png": { "type": "string", "description": "深度图 URI（可选，提升方向估计）" }
+    }
+  },
+  "options": { "type": "object", "properties": { "quality": { "type": "string", "enum": ["draft", "normal", "fine"] } } },
+  "output": {
+    "type": "object",
+    "required": ["sh_coeff", "light_dir", "color_temp", "intensity"],
+    "properties": {
+      "sh_coeff": { "type": "array", "items": { "type": "number" }, "minItems": 9, "maxItems": 9, "description": "二阶球谐 9 系数（RGB 合并展开）" },
+      "light_dir": { "type": "object", "properties": { "azimuth": { "type": "number", "description": "方位角，度，0=正前顺时针" }, "polar": { "type": "number", "description": "仰角，度，0=地平线 90=头顶" } }, "required": ["azimuth", "polar"] },
+      "color_temp": { "type": "number", "description": "色温，Kelvin（约 2500 暖 ~ 7500 冷）" },
+      "intensity": { "type": "number", "description": "光照强度 0~2，1 为标准" }
+    }
+  },
+  "errors": [
+    { "code": "E_LIGHTING_FAILED", "message": "光照估计失败（如图像过暗）", "retryable": true },
+    { "code": "E_LIGHTING_TIMEOUT", "message": "估计超时", "retryable": true },
+    { "code": "E_INVALID_INPUT", "message": "输入缺失或 URI 无法解析", "retryable": false }
+  ],
+  "latency": { "p50_ms": 500, "p95_ms": 1500, "timeout_ms": 8000 },
+  "notes": "输出直接作为 T04/T05 的参数，同时供 Critic 客观光照一致性分量使用。"
+}

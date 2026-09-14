@@ -1,0 +1,88 @@
+# Model Registry（规范 N3：A 组维护，B 组产出权重后提 PR 更新）
+# status: staging(实验) | prod(生产)；fallback: 加载失败时的回落模型（L3 降级）
+# 2026-09-13 合并 B 组 Studio-Compositing-Console 算法引擎（bsrc/，上游 b3107bc）：
+#   T03/T04/T05/T06/T07 已切到 B 组真实算法；缺 opencv 或 IMC_ENGINE=mock 时回落 A 组引擎。
+
+registry_version: 2
+updated_at: 2026-09-13
+updated_by: A
+
+models:
+  # ---- T01 matting ----
+  - tool: matting
+    name: birefnet-base
+    version: v1.1.0-bsrc-chain
+    path: ""            # BiRefNet 权重仍待 B 组提供；放入后设 BIREFNET_WEIGHT_PATH 即自动启用
+    metrics: {}         # SAD/MSE/Grad/Conn（B4 实验表同步；B 组合成集 n=96：SAD -56.8%）
+    status: prod
+    fallback: rembg-u2net -> grabcut-auto -> color-distance   # L3 降级链
+    notes: "B 组抠图链（bsrc/matting）已接通：torch+权重就绪即走真实 BiRefNet；离线默认 rembg 神经网络抠图（onnxruntime，REMBG_MODEL 选型），再降 GrabCut/色彩距离"
+
+  # ---- T02 background_generate ----
+  - tool: background_generate
+    name: sdxl-base
+    version: v1.0.0-mock
+    path: ""
+    metrics: {}
+    status: prod
+    fallback: null
+    notes: "mock 渐变生成；B5/B7 接 SDXL/FLUX + LoRA"
+
+  # ---- T03 lighting_estimate ----
+  - tool: lighting_estimate
+    name: lambert-hemisphere
+    version: v0.9.0-bsrc
+    path: "ai-service/bsrc/lighting/lighting_estimate.py"
+    metrics: {}
+    status: prod
+    fallback: light-estimator-mock
+    notes: "B 组 Lambert 半球估计（方向/仰角/SH9 最小二乘投影）；输出换算为 A 组数值契约（azimuth/polar/开尔文）"
+
+  # ---- T04 relight ----
+  - tool: relight
+    name: directional-relight
+    version: v1.1.0-bsrc
+    path: "ai-service/bsrc/relighting/relight_tool.py"
+    metrics: {}        # B 组四路消融 n=24：|dL| -68%，dAB -74.7%，BNR -38%
+    status: prod
+    fallback: relight-mock
+    notes: "B 组方向性光照（亮度渐变场+色温+软光弥散）；IC-Light 仍为远期目标，MKL 迁移保留作对比"
+
+  # ---- T05 shadow_generate ----
+  - tool: shadow_generate
+    name: procedural-shadow
+    version: v1.1.0-bsrc
+    path: "ai-service/bsrc/shadow/shadow_tool.py"
+    metrics: {}
+    status: prod
+    fallback: shadow-ellipse-mock
+    notes: "B 组程序化阴影（alpha 模糊+背光偏移+背景压暗）= B6 基线；A 组椭圆版保留为 L1 降级"
+
+  # ---- T06 harmonize ----
+  - tool: harmonize
+    name: harmonize-v2
+    version: v2.0.0-bsrc
+    path: "ai-service/bsrc/harmonization/harmonize_tool.py"
+    metrics: {}        # FDR 防压黑保护内建（fdr_ok 阈值 0.70~1.30）
+    status: prod
+    fallback: harmonize-reinhard-mock
+    notes: "B 组 v2：Lab 色度对齐+低频亮度迁移+肤色保护+FDR 防压黑；DoveNet 仍为远期目标"
+
+  # ---- T07 enhance ----
+  - tool: enhance
+    name: depth-enhance-fx
+    version: v1.1.0-bsrc
+    path: "ai-service/bsrc/fx/fx_tool.py"
+    metrics: {}
+    status: prod
+    fallback: enhance-mock
+    notes: "B 组深度虚化（近清晰/远虚化，修正旧版反置）+ 特效链 effects（spotlight/bokeh/fog/vignette/color_temp/depth_blur，支持区域选区）"
+
+  # ---- T08 export ----
+  - tool: export
+    name: pure-io
+    version: v1.0.0-prod
+    path: "ai-service/aiservice/export_impl.py"
+    metrics: {}
+    status: prod
+    fallback: null
