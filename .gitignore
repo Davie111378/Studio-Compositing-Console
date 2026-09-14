@@ -31,9 +31,8 @@ Thumbs.db
 *.swp
 ehthumbs.db
 
-# ===== Irrelevant school-handout PDFs (not the user's own reports) =====
-生产实习/生产实习/*.pdf
-生产实习/*.pdf
+# ===== Reports: kept local only, not published to GitHub =====
+生产实习/
 
 # ===== Unrelated project: thesis-proposal materials (separate topic) =====
 开题材料/
