@@ -1,0 +1,8 @@
+{
+  "name": "ic-tools",
+  "private": true,
+  "description": "ImageCompose 首页构建辅助脚本（截图 / 素材工具）",
+  "dependencies": {
+    "playwright-core": "^1.63.0"
+  }
+}

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ImageCompose · From Image to Reality</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ══════════ 顶栏 ══════════ -->
+<header class="site-head" id="siteHead">
+  <a class="brand" href="#top">
+    <span class="brand-orb"></span>
+    <span class="brand-name">ImageCompose</span>
+  </a>
+  <nav class="site-nav">
+    <a href="#top">Create</a>
+    <a href="#top">Research</a>
+    <a href="#top">Workspace</a>
+  </nav>
+  <a class="site-cta" href="#top">Try</a>
+</header>
+
+<!-- ══════════ 右侧章节索引 ══════════ -->
+<aside class="chapter-index" id="chapterIndex" aria-hidden="true"></aside>
+
+<!-- ══════════ 底部完成度 ══════════ -->
+<div class="composition-bar" id="compositionBar">
+  <span class="cb-end">Original</span>
+  <div class="cb-track"><div class="cb-fill" id="cbFill"></div><div class="cb-dot" id="cbDot"></div></div>
+  <span class="cb-end">Final</span>
+  <span class="cb-pct" id="cbPct">0%</span>
+</div>
+
+<!-- ══════════ 叙事主体 ══════════ -->
+<main class="story" id="story">
+  <div class="stage" id="stage">
+
+    <canvas id="cv" class="stage-canvas"></canvas>
+
+    <!-- 章节文字 -->
+    <div class="chapter-panel" id="chapterPanel">
+      <div class="ch-num" id="chNum">00</div>
+      <h2 class="ch-en" id="chEn">HERO</h2>
+      <div class="ch-zh" id="chZh"></div>
+      <p class="ch-desc" id="chDesc"></p>
+      <div class="ch-rule"></div>
+      <div class="ch-meta" id="chMeta"></div>
+    </div>
+
+    <!-- Agent 存在 -->
+    <div class="agent" id="agentEl">
+      <div class="agent-inner">
+        <div class="orb" id="orb"></div>
+        <canvas class="wave" id="wave" width="240" height="54"></canvas>
+      </div>
+      <p class="caption" id="caption">我在这里。</p>
+    </div>
+
+    <!-- 技术读数 -->
+    <div class="readout" id="readout">
+      <div class="ro-row"><span class="ro-k">MODULE</span><span class="ro-v" id="roModule">—</span></div>
+      <div class="ro-row"><span class="ro-k">LIGHT DIR</span><span class="ro-v" id="roDir">—</span></div>
+      <div class="ro-row"><span class="ro-k">COLOR TEMP</span><span class="ro-v" id="roTemp">—</span></div>
+      <div class="ro-row"><span class="ro-k">BOUNDARY</span><span class="ro-v" id="roAlpha">—</span></div>
+    </div>
+
+    <!-- 光源拖拽提示 -->
+    <div class="light-grab" id="lightGrab">
+      <span class="lg-ring"></span>
+      <span class="lg-label">拖动光源</span>
+    </div>
+
+    <!-- PLAN 路径 -->
+    <div class="plan-path" id="planPath">
+      <div class="pp-line"></div>
+      <div class="pp-nodes">
+        <span class="pp-node">T01</span><span class="pp-node">T02</span><span class="pp-node">T03</span>
+        <span class="pp-node">T04</span><span class="pp-node">T05</span><span class="pp-node">T06</span>
+        <span class="pp-node">T07</span><span class="pp-node">T08</span>
+      </div>
+    </div>
+
+    <!-- CRITIC 面板 -->
+    <div class="critic-panel" id="criticPanel">
+      <div class="cp-head">
+        <span class="cp-title">AGENT SELF-CHECK</span>
+        <span class="cp-state" id="cpState">CHECKING</span>
+      </div>
+      <div class="cp-dims" id="cpDims">
+        <div class="cp-dim" data-dim="lighting"><span class="cp-name">LIGHTING</span><span class="cp-weight">0.30</span><span class="cp-bar"><i></i></span><span class="cp-score">—</span></div>
+        <div class="cp-dim" data-dim="shadow"><span class="cp-name">SHADOW</span><span class="cp-weight">0.25</span><span class="cp-bar"><i></i></span><span class="cp-score">—</span></div>
+        <div class="cp-dim" data-dim="color"><span class="cp-name">COLOR</span><span class="cp-weight">0.20</span><span class="cp-bar"><i></i></span><span class="cp-score">—</span></div>
+        <div class="cp-dim" data-dim="edge"><span class="cp-name">EDGE</span><span class="cp-weight">0.25</span><span class="cp-bar"><i></i></span><span class="cp-score">—</span></div>
+      </div>
+      <div class="cp-foot">
+        <span class="cp-overall" id="cpOverall">—</span>
+        <span class="cp-verdict" id="cpVerdict"></span>
+      </div>
+      <div class="cp-reroll" id="cpReroll"></div>
+    </div>
+
+    <!-- FINAL 徽标 -->
+    <div class="final-badge" id="finalBadge">
+      <div class="fb-label">FINAL</div>
+      <div class="fb-score">95<span>/100</span></div>
+    </div>
+
+    <!-- CREATE -->
+    <div class="create-panel" id="createPanel">
+      <div class="cr-agent"><div class="orb big"></div></div>
+      <p class="cr-line">现在，把你的图片交给我。</p>
+      <div class="drop" id="drop">
+        <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+          <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V15"/>
+        </svg>
+        <div class="drop-t">上传你的图片</div>
+        <div class="drop-s">Drag / Drop / Click</div>
+      </div>
+      <button class="ghost-btn" id="demoBtn">试用示例</button>
+    </div>
+
+    <!-- 处理中 -->
+    <div class="process-panel" id="processPanel">
+      <div class="pr-line" id="prLine">正在分析你的图片</div>
+      <ul class="pr-steps" id="prSteps"></ul>
+    </div>
+
+  </div>
+</main>
+
+<!-- ══════════ 页脚 ══════════ -->
+<footer class="site-foot">
+  <div class="foot-brand">
+    <span class="brand-orb small"></span>
+    <span>ImageCompose</span>
+  </div>
+  <div class="foot-links">
+    <a href="#top">研究</a><a href="#top">工作台</a><a href="#top">关于</a>
+  </div>
+  <div class="foot-note">图像抠取与光影一致性融合 · 生产实习项目</div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

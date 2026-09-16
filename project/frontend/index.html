@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ImageCompose — From image to reality.</title>
+<meta name="description" content="抠取与光影一致性融合 Agent：从一张普通照片，到一张有光的成片。">
+<!-- Agent API 基址：留空 = 同源（推荐，配合 tools/dev_server.py 反代）；仅允许 http/https 绝对地址 -->
+<meta name="imc-api-base" content="">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%237EA7B4'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ======================== HERO（滚动时照片由灰雾渐清） ======================== -->
+<header class="hero" id="top">
+  <div class="hero-pin">
+    <div class="hero-copy">
+      <h1 class="hero-title">From image<br>to&nbsp;reality.</h1>
+      <p class="hero-sub">告诉 Agent 你想让这张图变成什么。</p>
+    <div class="presence">
+      <span class="p-dot"></span>
+      <canvas class="wave" data-wave="idle" width="300" height="52"></canvas>
+      <span class="p-say">我在这里。</span>
+    </div>
+    <button class="hero-cta" id="btnStart" type="button">开始创作<i class="mono">&nbsp; · &nbsp;START&nbsp; A&nbsp; CREATION</i></button>
+    <p class="scroll-hint">SCROLL&nbsp; TO&nbsp; SEE&nbsp; IT&nbsp; HAPPEN</p>
+    </div>
+
+    <figure class="hero-photo">
+      <div class="hero-img-wrap"><img id="heroImg" src="media/source_original.jpg" alt="湖边的一张普通人像原片"></div>
+      <figcaption class="mono cap">ORIGINAL&nbsp; <i>·</i>&nbsp; 一张还没有完成感的照片</figcaption>
+    </figure>
+
+    <nav class="chapter-index" aria-label="章节索引"></nav>
+  </div>
+</header>
+
+<!-- 全页创作进度（ORIGINAL ──●── FINAL，仅主体创作阶段可见） -->
+<div class="compose-bar mono" id="composeBar" aria-hidden="true">
+  <span>ORIGINAL</span>
+  <span class="cb-line"><i id="cbFill"></i></span>
+  <span>FINAL</span>
+</div>
+
+<!-- ======================== SHOWCASE ======================== -->
+<section class="showcase" id="showcase">
+  <div class="pin">
+    <div class="frame" id="frame">
+
+      <!-- ===== 左栏（各章文案） ===== -->
+      <div class="rails">
+        <aside class="rail" data-ch="1">
+          <div class="rail-head">
+            <div class="ch-mark"><span class="ch-dot"></span><span class="mono ch-num">01</span></div>
+            <h2 class="ch-title">UNDERSTAND</h2>
+            <p class="ch-zh">先理解，再规划</p>
+            <p class="ch-body">它先决定怎么做，而不是立刻动手。</p>
+          </div>
+          <div class="motion">
+            <p class="mono"><b>MOTION</b>&nbsp; <i>·</i>&nbsp; 文字动，图不动</p>
+            <p><span>主动作</span>路径逐步形成</p>
+            <p><span>进度</span><code class="mono">0.04 → 0.14</code></p>
+            <p><span>节奏</span>中 <i>·</i> <code class="mono">500ms</code></p>
+          </div>
+        </aside>
+
+        <aside class="rail" data-ch="2">
+          <div class="rail-head">
+            <div class="ch-mark"><span class="ch-dot"></span><span class="mono ch-num">02</span></div>
+            <h2 class="ch-title">EXTRACT</h2>
+            <p class="ch-zh">主体分离</p>
+            <p class="ch-body">背景退场，只留下人与发丝的真实边界。</p>
+          </div>
+          <div class="motion">
+            <p class="mono"><b>MOTION</b>&nbsp; <i>·</i>&nbsp; 科学感</p>
+            <p><span>主动作</span>背景退场 → 边缘扫描</p>
+            <p><span>进度</span><code class="mono">0.14 → 0.26</code></p>
+            <p><span>节奏</span>明显 <i>·</i> <code class="mono">800ms</code></p>
+          </div>
+        </aside>
+
+        <aside class="rail" data-ch="3">
+          <div class="rail-head">
+            <div class="ch-mark"><span class="ch-dot"></span><span class="mono ch-num">03</span></div>
+            <h2 class="ch-title">COMPOSE</h2>
+            <p class="ch-zh">空间生成</p>
+            <p class="ch-body">不是换背景，是不一样地长出一个空间。</p>
+          </div>
+          <div class="motion">
+            <p class="mono"><b>MOTION</b>&nbsp; <i>·</i>&nbsp; 电影感</p>
+            <p><span>主动作</span>远景 → 地面 → 水面 层层长出</p>
+            <p><span>进度</span><code class="mono">0.26 → 0.44</code></p>
+            <p><span>节奏</span>中 <i>·</i> <code class="mono">900ms</code></p>
+          </div>
+        </aside>
+
+        <aside class="rail" data-ch="4">
+          <div class="rail-head">
+            <div class="ch-mark"><span class="ch-dot"></span><span class="mono ch-num">04</span></div>
+            <h2 class="ch-title">ILLUMINATE</h2>
+            <p class="ch-zh">环境光分析</p>
+            <p class="ch-body">先看清环境里原本有什么光，而不是先改变它。</p>
+          </div>
+          <div class="motion">
+            <p class="mono"><b>MOTION</b>&nbsp; <i>·</i>&nbsp; 极简，安静</p>
+            <p><span>主动作</span>只出现光源与方向</p>
+            <p><span>进度</span><code class="mono">0.44 → 0.52</code></p>
+            <p><span>节奏</span>慢 <i>·</i> <code class="mono">600ms</code></p>
+          </div>
+        </aside>
+
+        <aside class="rail rail--mini" data-ch="5">
+          <div class="rail-head">
+            <div class="ch-mark"><span class="ch-dot"></span><span class="mono ch-num">05</span></div>
+            <h2 class="ch-title">RELIGHT</h2>
+            <p class="ch-zh">重打光</p>
+          </div>
+        </aside>
+
+        <aside class="rail" data-ch="6">
+          <div class="rail-head">
+            <div class="ch-mark"><span class="ch-dot"></span><span class="mono ch-num">06</span></div>
+            <h2 class="ch-title">GROUND</h2>
+            <p class="ch-zh">让阴影落地</p>
+            <p class="ch-body">没有阴影，人就永远浮在画面里。</p>
+          </div>
+          <div class="motion">
+            <p class="mono"><b>MOTION</b>&nbsp; <i>·</i>&nbsp; 特写，极简</p>
+            <p><span>主动作</span>阴影出现 → 停</p>
+            <p><span>进度</span><code class="mono">0.70 → 0.78</code></p>
+            <p><span>节奏</span>慢 <i>·</i> <code class="mono">600ms</code></p>
+          </div>
+        </aside>
+
+        <aside class="rail" data-ch="7">
+          <div class="rail-head">
+            <div class="ch-mark"><span class="ch-dot"></span><span class="mono ch-num">07</span></div>
+            <h2 class="ch-title">HARMONIZE</h2>
+            <p class="ch-zh">统一质感</p>
+            <p class="ch-body">色温、边缘、噪点、景深，最后一起拉齐。</p>
+          </div>
+          <div class="motion">
+            <p class="mono"><b>MOTION</b>&nbsp; <i>·</i>&nbsp; 慢到几乎看不出来</p>
+            <p><span>主动作</span>全图统一</p>
+            <p><span>进度</span><code class="mono">0.78 → 0.88</code></p>
+            <p><span>节奏</span>极慢 <i>·</i> <code class="mono">1600ms</code></p>
+          </div>
+        </aside>
+
+        <aside class="rail" data-ch="8">
+          <div class="rail-head">
+            <div class="ch-mark"><span class="ch-dot"></span><span class="mono ch-num">08</span></div>
+            <h2 class="ch-title">ENHANCE</h2>
+            <p class="ch-zh">细节统一</p>
+            <p class="ch-body">最终像不像真实照片，靠的是这一层细节。</p>
+          </div>
+          <div class="motion">
+            <p class="mono"><b>MOTION</b>&nbsp; <i>·</i>&nbsp; 微距，编辑部</p>
+            <p><span>主动作</span><code class="mono">Sharp → Depth → Grain</code></p>
+            <p><span>进度</span><code class="mono">0.88 → 0.94</code></p>
+            <p><span>节奏</span>中 <i>·</i> <code class="mono">1200ms</code></p>
+          </div>
+        </aside>
+
+        <aside class="rail" data-ch="9">
+          <div class="rail-head">
+            <div class="ch-mark"><span class="ch-dot"></span><span class="mono ch-num">09</span></div>
+            <h2 class="ch-title">CRITIC</h2>
+            <p class="ch-zh">Agent 自检</p>
+            <p class="ch-body">它会停下来判断。不合格，就真的回到上一步重做。</p>
+          </div>
+          <div class="motion motion--dark">
+            <p class="mono"><b>MOTION</b>&nbsp; <i>·</i>&nbsp; 全页停留最久</p>
+            <p><span>主动作</span>逐项检查 → 回退重跑</p>
+            <p><span>进度</span><code class="mono">0.94 → 1.00</code></p>
+            <p><span>节奏</span>静 <i>·</i> <code class="mono">6000ms</code> 叙事段</p>
+          </div>
+        </aside>
+
+        <aside class="rail" data-ch="11">
+          <div class="rail-head">
+            <div class="ch-mark"><span class="ch-dot"></span><span class="mono ch-num">11</span></div>
+            <h2 class="ch-title">CREATE</h2>
+            <p class="ch-zh">Agent 接管</p>
+            <p class="ch-body">前面十章回答它能做什么，这一章回答现在你来用。</p>
+          </div>
+          <div class="motion">
+            <p class="mono"><b>MOTION</b>&nbsp; <i>·</i>&nbsp; 产品高潮</p>
+            <p><span>主动作</span>Agent 成为第一视觉中心</p>
+            <p><span>进度</span>Showcase 结束</p>
+            <p><span>节奏</span>活起来 <i>·</i> <code class="mono">900ms</code></p>
+          </div>
+        </aside>
+
+        <aside class="rail" data-ch="12">
+          <div class="rail-head">
+            <div class="ch-mark"><span class="ch-dot"></span><span class="mono ch-num">12</span></div>
+            <h2 class="ch-title">UPLOAD</h2>
+            <p class="ch-zh">原地 Morph</p>
+            <p class="ch-body">不跳页——卡片自己缩小、移动，融进中央舞台。</p>
+          </div>
+          <div class="motion">
+            <p class="mono"><b>MOTION</b>&nbsp; <i>·</i>&nbsp; <code>FLIP 600-800ms</code></p>
+            <p><span>主动作</span>上传卡 → ImageStage</p>
+            <p><span>进度</span>真实创作开场</p>
+            <p><span>节奏</span>细腻 <i>·</i> <code class="mono">700ms</code></p>
+          </div>
+        </aside>
+
+        <aside class="rail" data-ch="13">
+          <div class="rail-head">
+            <div class="ch-mark"><span class="ch-dot"></span><span class="mono ch-num">13</span></div>
+            <h2 class="ch-title">YOUR TURN</h2>
+            <p class="ch-zh">真实生成</p>
+            <p class="ch-body">这一次不是演示——你的图片会走完同一条流水线。</p>
+          </div>
+          <div class="motion">
+            <p class="mono"><b>MOTION</b>&nbsp; <i>·</i>&nbsp; 与 Showcase 同构</p>
+            <p><span>主动作</span>回到 <code class="mono">02 → 10</code> 循环</p>
+            <p><span>进度</span>真实重新开始</p>
+            <p><span>节奏</span>与演示一致 <i>·</i> 真实 job</p>
+          </div>
+        </aside>
+      </div>
+
+      <!-- ===== 10 FINAL 的页眉（唯一例外版式） ===== -->
+      <div class="final-head" data-ch="10">
+        <div class="fh-left">
+          <span class="mono fh-num">10</span>
+          <h2 class="ch-title">FINAL</h2>
+          <span class="fh-zh">完成</span>
+        </div>
+        <span class="mono fh-score"><b id="finalScore">0</b>&nbsp;/&nbsp;100</span>
+      </div>
+      <p class="final-sub" data-ch="10">一张灰雾中的照片，现在有了自己的光。</p>
+
+      <!-- ===== 中央舞台（全页唯一，尺寸随章节 morph） ===== -->
+      <div class="stage" id="stage">
+        <div class="stage-bg" id="stageBg"></div>
+
+        <!-- 01 UNDERSTAND（先出现“你说了什么”，Agent 回应后计划路径才生成） -->
+        <div class="layer" data-ch="1">
+          <img class="ph01" src="media/source_original.jpg" alt="">
+          <div class="bubble bubble--dark bubble--ask"><span class="p-dot"></span>把这个人物放到夕阳湖边，光线要暖。</div>
+          <p class="mono plan-label">PLAN&nbsp; <i>/</i>&nbsp; 5&nbsp; STEPS</p>
+          <svg class="plan-svg" viewBox="0 0 976 620" preserveAspectRatio="none" aria-hidden="true">
+            <line id="planLine" x1="128" y1="516" x2="872" y2="516" stroke="#7EA7B4" stroke-width="1.4"/>
+            <g id="planNodes" fill="#E7EFF1" stroke="#7EA7B4" stroke-width="1.6">
+              <circle cx="128" cy="516" r="6"/>
+              <circle cx="314" cy="516" r="6"/>
+              <circle cx="500" cy="516" r="6"/>
+              <circle cx="686" cy="516" r="6"/>
+              <circle cx="872" cy="516" r="7"/>
+            </g>
+          </svg>
+          <div class="plan-steps mono">
+            <span style="left:13.1%">T01&nbsp; 分离主体</span>
+            <span style="left:32.2%">T02&nbsp; 生成环境</span>
+            <span style="left:51.2%">T03&nbsp; 估计光向</span>
+            <span style="left:70.3%">T04&nbsp; 接触阴影</span>
+            <span style="left:89.3%">T05&nbsp; 输出成片</span>
+          </div>
+          <div class="bubble bubble--plan"><span class="p-dot"></span>我会先分离主体，再建立新的场景。</div>
+        </div>
+
+        <!-- 02 EXTRACT（背景退场 → 边缘扫描：极细 mask 描边沿轮廓渐显） -->
+        <div class="layer" data-ch="2">
+          <img class="ph02-bg" src="media/source_original.jpg" alt="">
+          <img class="ph02-sub" src="media/subject_clean.png" alt="">
+          <img class="ph02-edge" id="ph02Edge" src="media/subject_edge.png" alt="">
+          <div class="bbox"><i></i><i></i><i></i><i></i></div>
+          <div class="scanline"></div>
+          <div class="pill pill--alpha"><span class="mono">ALPHA</span><b class="mono" id="alphaVal">62.0%</b></div>
+        </div>
+
+        <!-- 03 COMPOSE -->
+        <div class="layer" data-ch="3">
+          <div class="scene-reveal" id="sceneReveal"></div>
+          <img class="ph03-sub" src="media/subject_clean.png" alt="">
+          <span class="pill pill--tag" data-beat="0.42" style="left:24%;top:22%">远景</span>
+          <span class="pill pill--tag" data-beat="0.60" style="left:26%;top:76%">地面</span>
+          <span class="pill pill--tag" data-beat="0.78" style="left:72%;top:64%">水面</span>
+          <div class="bubble bubble--compose"><span class="p-dot"></span>我保留了它的姿态，为它建立新的环境。</div>
+        </div>
+
+        <!-- 04 ILLUMINATE（参数渐进出现：光向 → 角度 → 色温） -->
+        <div class="layer" data-ch="4">
+          <img class="fill" id="illuFill" src="media/stage_compose.jpg" alt="">
+          <img class="ph03-sub job-only" id="illuSub" src="" alt="">
+          <div class="light-cursor">
+            <span class="lc-ring"></span>
+            <svg class="lc-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="4" y1="4" x2="96" y2="96"/></svg>
+            <span class="lc-dot"></span>
+          </div>
+          <div class="pill pill--alpha pill--light"><span class="mono">LIGHT&nbsp; DIR</span><b class="mono"><span id="lightDeg">0</span>°</b></div>
+          <div class="pill pill--alpha pill--light pill--temp" id="tempPill"><span class="mono">COLOR&nbsp; TEMP</span><b class="mono"><span id="tempK">0</span>K</b></div>
+          <p class="onimg-note">我不改变它，只是先看清它。</p>
+        </div>
+
+        <!-- 05 RELIGHT（视频 scrub + 可拖拽光源实时改变受光；preload=none，进入本章才按需加载，避免 16MB 视频常驻内存） -->
+        <div class="layer" data-ch="5">
+          <video class="fill" id="vidRelight" src="media/video/relight_clean.mp4" muted playsinline preload="none" poster="media/stage_compose.jpg"></video>
+          <img class="fill job-only" id="relightBg" src="" alt="">
+          <img class="fill job-only" id="relightFg" src="" alt="">
+          <div class="relight-glow" id="relightGlow" aria-hidden="true"></div>
+          <div class="light-cursor light-cursor--relight" id="lightDrag">
+            <span class="lc-ring"></span>
+            <svg class="lc-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="4" y1="4" x2="96" y2="96"/></svg>
+            <span class="lc-dot"></span>
+            <span class="mono drag-hint" id="dragHint">DRAG&nbsp; THE&nbsp; LIGHT</span>
+          </div>
+          <div class="onimg-block">
+            <p class="onimg-note">我把环境光重新分配到人物身上。</p>
+            <p class="mono onimg-meta">RELIGHT&nbsp; <i>·</i>&nbsp; 0.52 → 0.70&nbsp; <i>·</i>&nbsp; 全页唯一视觉高潮</p>
+          </div>
+        </div>
+
+        <!-- 06 GROUND（976×470 特写条） -->
+        <div class="layer" data-ch="6">
+          <img class="fill" src="media/detail_feet_noshadow.jpg" alt="">
+          <img class="fill" id="feetShadow" src="media/detail_feet.jpg" alt="" style="opacity:0">
+          <img class="fill job-only" id="groundBg" src="" alt="">
+          <img class="fill job-only" id="groundFg" src="" alt="">
+          <img class="fill job-only" id="groundTop" src="" alt="" style="opacity:0">
+          <p class="onimg-note onimg-note--band">脚 <i>·</i> 水面 <i>·</i> 接触阴影 — 画面里只有这三样东西。</p>
+          <div class="bubble bubble--ground"><span class="p-dot"></span>让它站稳。</div>
+        </div>
+
+        <!-- 07 HARMONIZE -->
+        <div class="layer" data-ch="7">
+          <img class="fill" id="harmBase" src="media/stage_ground.jpg" alt="">
+          <img class="fill" id="harmonTop" src="media/stage_final.jpg" alt="" style="opacity:0">
+          <div class="harm-words mono">
+            <span>色温</span><i>→</i><span>边缘</span><i>→</i><span>噪点</span><i>→</i><span>景深</span>
+          </div>
+        </div>
+
+        <!-- 08 ENHANCE（三联微距，舞台底色退成纸色；job 模式为全帧增强前→后） -->
+        <div class="layer layer--triptych" data-ch="8">
+          <img class="fill job-only" id="enhBase" src="" alt="">
+          <img class="fill job-only" id="enhTop" src="" alt="" style="opacity:0">
+          <figure class="macro demo-only" style="--d:0">
+            <img src="media/macro_hair.jpg" alt=""><figcaption class="mono">发丝&nbsp; <i>·</i>&nbsp; 逆光边缘</figcaption>
+          </figure>
+          <figure class="macro demo-only" style="--d:1">
+            <img src="media/macro_water.jpg" alt=""><figcaption class="mono">水面&nbsp; <i>·</i>&nbsp; 波光肌理</figcaption>
+          </figure>
+          <figure class="macro demo-only" style="--d:2">
+            <img src="media/macro_cloud.jpg" alt=""><figcaption class="mono">云层&nbsp; <i>·</i>&nbsp; 颗粒与对比</figcaption>
+          </figure>
+        </div>
+
+        <!-- 09 CRITIC（深色章 + 视频 scrub + 自检面板） -->
+        <div class="layer layer--critic" data-ch="9">
+          <div class="critic-dim"></div>
+          <video class="fill" id="vidCritic" src="media/video/critic_reroll_clean.mp4" muted playsinline preload="none" poster="media/stage_final.jpg"></video>
+          <img class="fill job-only" id="criticBase" src="" alt="">
+          <div class="critic-dim critic-dim--top"></div>
+          <p class="onimg-note critic-say" id="criticSay">让我检查一下。</p>
+          <div class="critic-panel">
+            <div class="cp-head mono"><span>AGENT&nbsp; SELF-CHECK</span><span>THRESHOLD&nbsp; <span id="cpThr">80</span></span></div>
+            <div class="cp-rows mono">
+              <div class="cp-row"><span>LIGHTING</span><b id="cpLight">94</b><em></em></div>
+              <div class="cp-row"><span>SHADOW</span><b id="cpShadow">78</b><em id="cpFlag">← 未达标</em></div>
+              <div class="cp-row"><span>COLOR</span><b id="cpColor">95</b><em></em></div>
+              <div class="cp-row"><span>EDGE</span><b id="cpEdge">97</b><em></em></div>
+            </div>
+            <div class="cp-pill mono" id="cpPill">SHADOW 78 &lt; 80&nbsp; →&nbsp; reroll T04 回到 GROUND 重跑</div>
+          </div>
+        </div>
+
+        <!-- 10 FINAL（满宽静屏） -->
+        <div class="layer" data-ch="10">
+          <img class="fill" id="finalFill" src="media/stage_final.jpg" alt="最终成片：夕阳湖边，光落在人物身上">
+          <div class="bubble bubble--final"><span class="p-dot"></span>好了。</div>
+        </div>
+
+        <!-- 11 CREATE（交互入口） -->
+        <div class="layer layer--create" data-ch="11" id="dropZone" tabindex="0" role="button" aria-label="上传图片，或点击选择">
+          <div class="create-center">
+            <div class="create-orb"><span class="orb-ring"></span><span class="orb-dot"></span></div>
+            <canvas class="wave wave--big" data-wave="listen" width="440" height="68"></canvas>
+            <p class="mono create-agent">AI&nbsp; AGENT</p>
+            <p class="create-lead">现在，让我处理你的图片。</p>
+            <p class="create-drop">DROP AN IMAGE</p>
+            <p class="mono create-formats">或点击选择&nbsp; <i>·</i>&nbsp; JPG&nbsp; /&nbsp; PNG&nbsp; /&nbsp; WEBP</p>
+            <button class="create-demo" id="btnDemo" type="button">或者，先试用示例</button>
+          </div>
+          <p class="mono create-hover" aria-hidden="true">松手，给我图片。</p>
+        </div>
+
+        <!-- 12 UPLOAD（原地 morph + 处理清单） -->
+        <div class="layer layer--upload" data-ch="12">
+          <div class="up-card" id="upCard">
+            <div class="upcard-head"><span class="mono">UPLOAD</span><b class="up-ok" id="upOk">已收到</b></div>
+            <div class="up-thumb"><img id="upThumb" src="media/source_original.jpg" alt=""></div>
+            <p class="mono up-name" id="upName">portrait_0427.jpg</p>
+            <div class="up-progress"><i id="upBar"></i></div>
+          </div>
+          <div class="up-processing">
+            <p class="mono up-label">PROCESSING<span class="up-live" id="upLive" hidden>&nbsp;·&nbsp;LIVE</span></p>
+            <ul class="up-list" id="upList">
+              <li><span class="li-dot"></span><span class="li-name">上传</span><b class="li-status">排队中</b></li>
+              <li><span class="li-dot"></span><span class="li-name">解析</span><b class="li-status">排队中</b></li>
+              <li><span class="li-dot"></span><span class="li-name">理解主体与场景</span><b class="li-status">排队中</b></li>
+              <li><span class="li-dot"></span><span class="li-name">就绪</span><b class="li-status">—</b></li>
+            </ul>
+            <p class="up-note">每一步都给出视觉证据，而不是只有一句「正在处理」。</p>
+          </div>
+        </div>
+
+        <!-- 13 YOUR TURN（对话 + 计划卡） -->
+        <div class="layer layer--turn" data-ch="13">
+          <div class="turn-chat">
+            <div class="bubble bubble--agent">先告诉我，你想怎么改。</div>
+            <div class="bubble bubble--user">把这个人物放到夕阳湖边，光线要暖。</div>
+            <p class="turn-hint mono"><span class="p-dot"></span>按住说话&nbsp; <i>·</i>&nbsp; 也可以直接打字</p>
+          </div>
+          <div class="turn-plan">
+            <p class="mono turn-label">AGENT&nbsp; PLAN</p>
+            <dl class="plan-rows">
+              <div><dt>主体</dt><dd>人物 <i>·</i> 保留原姿态</dd></div>
+              <div><dt>场景</dt><dd>夕阳湖边 <i>·</i> 浅水</dd></div>
+              <div><dt>光线</dt><dd>暖光 <i>·</i> 左侧 <code class="mono">32°</code></dd></div>
+              <div><dt>阴影</dt><dd>自然接触阴影</dd></div>
+            </dl>
+            <button class="turn-go" id="btnReplay" type="button">开始生成</button>
+          </div>
+        </div>
+
+      </div><!-- /stage -->
+
+      <!-- 回放轴（REPLAY 模式显示：拖动 / 点节点 / 自动播放） -->
+      <div class="replay-bar mono" id="replayBar" hidden>
+        <button id="rpPlay" type="button">PLAY</button>
+        <div class="rp-track" id="rpTrack"><i id="rpFill"></i><b id="rpDot"></b><span id="rpTicks"></span></div>
+        <span id="rpLabel">01&nbsp; UNDERSTAND</span>
+        <button id="rpExit" type="button">EXIT</button>
+      </div>
+    </div><!-- /frame -->
+  </div><!-- /pin -->
+</section>
+
+<!-- ======================== 工作室（CREATE / RUN / SUMMARY 三态覆盖层） ======================== -->
+<div class="studio" id="studioCreate" hidden>
+  <div class="studio-inner">
+    <header class="studio-head">
+      <span class="mono">CREATE&nbsp; <i>·</i>&nbsp; 上传与指令</span>
+      <button class="studio-close mono" id="btnCloseCreate" type="button">ESC&nbsp; 关闭</button>
+    </header>
+    <div class="create-grid">
+      <div class="drop-col" id="studioDrop" tabindex="0" role="button" aria-label="上传图片，或点击选择">
+        <p class="mono drop-tag">ORIGINAL</p>
+        <div class="drop-visual">
+          <p class="create-drop">DROP AN IMAGE</p>
+          <p class="mono drop-formats">或点击选择&nbsp; <i>·</i>&nbsp; JPG&nbsp; /&nbsp; PNG&nbsp; /&nbsp; WEBP</p>
+          <img class="drop-thumb" id="studioThumb" src="media/source_original.jpg" alt="" hidden>
+        </div>
+        <p class="mono drop-name" id="studioName">&nbsp;</p>
+      </div>
+      <div class="instruct-col">
+        <p class="mono instruct-label">WHAT&nbsp; SHOULD&nbsp; I&nbsp; CHANGE?</p>
+        <div class="voice-row">
+          <button class="mic-btn" id="btnMic" type="button" aria-label="点击开始录音，说完再点一次结束" title="语音输入">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 15a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 1 0-7 0v5.5A3.5 3.5 0 0 0 12 15Zm5.5-3.5a5.5 5.5 0 0 1-11 0H4.8a7.2 7.2 0 0 0 6.3 7.14V21h1.8v-2.36a7.2 7.2 0 0 0 6.3-7.14h-1.7Z"/></svg>
+          </button>
+          <span class="mono voice-status" id="voiceStatus">语音输入 · 检测中…</span>
+        </div>
+        <textarea id="instructionInput" rows="3" maxlength="200">把这个人物放到夕阳湖边，光线要暖。</textarea>
+        <dl class="intent mono" id="intentCard">
+          <div><dt>主体</dt><dd id="intentSubject">上传图片中的人物</dd></div>
+          <div><dt>场景</dt><dd id="intentScene">按你的描述</dd></div>
+          <div><dt>光线</dt><dd id="intentLight">按你的描述</dd></div>
+        </dl>
+        <div class="launch-row">
+          <button class="turn-go is-on" id="btnLaunch" type="button">开始生成</button>
+          <span class="mono agent-mode" id="agentMode">AGENT&nbsp; ·&nbsp; 检测中…</span>
+        </div>
+        <p class="studio-note mono" id="studioNote">Agent 会先理解意图，生成执行计划，再逐个调用工具。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="studio" id="studioRun" hidden>
+  <div class="studio-inner">
+    <header class="studio-head">
+      <span class="mono">AGENT&nbsp; RUN&nbsp; <i>·</i>&nbsp; <span id="runMode">LIVE</span></span>
+      <span class="mono run-instruction" id="runInstruction"></span>
+      <button class="studio-close mono" id="btnCloseRun" type="button">后台运行&nbsp; ESC</button>
+    </header>
+    <div class="run-grid">
+      <div class="run-stagecol">
+        <div class="run-frame">
+          <img class="rf-img" id="rfA" alt="">
+          <img class="rf-img" id="rfB" alt="">
+          <div class="rf-subject-wrap" id="rfSubjectWrap"><img class="rf-subject" id="rfSubject" alt=""></div>
+          <div class="rf-chips mono" id="rfChips" hidden>
+            <span class="pill pill--alpha pill--light"><span>LIGHT&nbsp; DIR</span><b><span id="rfDeg">—</span>°</b></span>
+            <span class="pill pill--alpha pill--light pill--temp"><span>COLOR&nbsp; TEMP</span><b><span id="rfTemp">—</span>K</b></span>
+          </div>
+          <div class="agent-float" id="agentFloat">
+            <span class="p-dot"></span>
+            <canvas class="wave" data-wave="work" width="220" height="40"></canvas>
+            <p class="agent-caption" id="agentCaption">准备就绪。</p>
+            <button class="tts-toggle mono" id="btnTts" type="button" aria-label="开关语音播报" title="语音播报开关">TTS&nbsp; ON</button>
+          </div>
+        </div>
+        <div class="run-progress mono"><span>ORIGINAL</span><span class="cb-line"><i id="runFill"></i></span><span>FINAL</span></div>
+      </div>
+      <aside class="run-side">
+        <p class="mono up-label">PLAN</p>
+        <ul class="run-list mono" id="runList"></ul>
+        <div class="critic-live" id="criticLive" hidden>
+          <div class="cp-head mono"><span>AGENT&nbsp; SELF-CHECK</span><span>THRESHOLD&nbsp; <span id="clThreshold">80</span></span></div>
+          <div class="cp-rows mono" id="clRows"></div>
+          <div class="cp-pill mono" id="clPill"></div>
+        </div>
+        <p class="mono run-elapsed" id="runElapsed">00.0s</p>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<div class="studio" id="studioSummary" hidden>
+  <div class="studio-inner studio-inner--narrow">
+    <p class="mono sum-tag">CREATION&nbsp; COMPLETE</p>
+    <p class="sum-title">你的图片完成了。</p>
+    <img class="sum-final" id="sumFinal" alt="最终成片">
+    <dl class="sum-stats mono">
+      <div><dt>耗时</dt><dd id="sumTime">—</dd></div>
+      <div><dt>工具</dt><dd id="sumTools">—</dd></div>
+      <div><dt>修正</dt><dd id="sumFix">—</dd></div>
+    </dl>
+    <div class="sum-edit">
+      <textarea id="refineInput" rows="2" maxlength="200"
+        placeholder="继续编辑：光线太冷了 / 阴影轻一点 / 背景换回上一版，但保留现在的光"></textarea>
+      <div class="refine-row">
+        <button class="turn-go is-on" id="btnRefine" type="button">继续编辑</button>
+        <span class="mono" id="refineStatus">在同一会话上继续，Agent 只重跑受影响的下游。</span>
+      </div>
+    </div>
+    <details class="versions mono" id="versionsBox">
+      <summary>HISTORY · 节点版本与回滚</summary>
+      <ul class="versions-list" id="versionsList"></ul>
+      <p class="versions-note" id="versionsNote"></p>
+    </details>
+    <div class="sum-actions">
+      <button class="turn-go is-on" id="btnReplayJob" type="button">回看制作过程</button>
+      <button class="sum-again mono" id="btnAgain" type="button">新的创作</button>
+    </div>
+    <p class="mono sum-quote" id="sumQuote">要不要看看我是怎么做的？</p>
+  </div>
+</div>
+
+<!-- ======================== FOOTER ======================== -->
+<footer class="footer">
+  <div class="footer-hero">
+    <span class="f-dot"></span>
+    <p class="f-title">From image to reality.</p>
+    <p class="mono f-meta">IMAGECOMPOSE&nbsp; <i>·</i>&nbsp; 图像抠取与光影一致性融合&nbsp; <i>·</i>&nbsp; 2026</p>
+  </div>
+  <div class="footer-bar">
+    <span class="f-brand"><span class="p-dot"></span>ImageCompose</span>
+    <nav class="f-nav"><a href="#top">研究</a><a href="#top">工作台</a><a href="#top">关于</a></nav>
+    <span class="mono f-copy">COPYRIGHT 2026 IMAGECOMPOSE</span>
+  </div>
+</footer>
+
+<input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" hidden>
+<script src="app.js"></script>
+</body>
+</html>

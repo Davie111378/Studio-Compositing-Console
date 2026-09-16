@@ -1,0 +1,19 @@
+# 依赖
+node_modules/
+
+# Python 工具脚本产物
+__pycache__/
+*.py[cod]
+
+# 工具状态（本机）
+.mimosa/
+
+# 密钥
+.env
+*.key
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

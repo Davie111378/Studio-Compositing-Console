@@ -1,0 +1,77 @@
+{
+  "run_id": "r20260915_4c13f9",
+  "session_id": "sbfbd492b8c2f",
+  "kind": "plan",
+  "planner": "rule",
+  "rollback": null,
+  "plan": {
+    "plan_id": "p20260915_47aeed",
+    "run_id": "r20260915_4c13f9",
+    "revision": 1,
+    "nodes": [
+      {
+        "id": "n1",
+        "tool": "matting",
+        "role": "matting",
+        "label": "抠取",
+        "inputs": {
+          "image": "asset://uploads/sbfbd492b8c2f/a531847fe_demo02.jpg",
+          "point": {
+            "x": 240,
+            "y": 320
+          },
+          "mode": "trimap"
+        },
+        "options": {},
+        "depends_on": [],
+        "status": "pending",
+        "quality": "draft",
+        "version": 1,
+        "attempts": 0,
+        "outputs": {},
+        "artifacts": [],
+        "error": null,
+        "started_at": null,
+        "finished_at": null,
+        "latency_ms": null,
+        "artifact_urls": []
+      },
+      {
+        "id": "n2",
+        "tool": "export",
+        "role": "export",
+        "label": "导出",
+        "inputs": {
+          "image": "@n1.rgba_png",
+          "format": "png"
+        },
+        "options": {},
+        "depends_on": [
+          "n1"
+        ],
+        "status": "pending",
+        "quality": "draft",
+        "version": 1,
+        "attempts": 0,
+        "outputs": {},
+        "artifacts": [],
+        "error": null,
+        "started_at": null,
+        "finished_at": null,
+        "latency_ms": null,
+        "artifact_urls": []
+      }
+    ],
+    "planner": "rule",
+    "created_at": 1789404831606,
+    "instruction": "点击这里，把这个主体抠出来",
+    "frozen": {},
+    "quality": "draft",
+    "edges": [
+      [
+        "n1",
+        "n2"
+      ]
+    ]
+  }
+}
