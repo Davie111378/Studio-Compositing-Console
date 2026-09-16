@@ -1,6 +1,0 @@
-[studio-regression] n=120 size=384
-  refiner_studio         L1 mean= 1.495%  median= 1.369%  p90= 2.297%   (coarse 基线 5.334%)
-  refiner_real_v3        L1 mean= 1.738%  median= 1.531%  p90= 2.751%   (coarse 基线 5.334%)
-  refiner_real_v2        L1 mean= 3.002%  median= 2.040%  p90= 3.578%   (coarse 基线 5.334%)
-  refiner_real_v3 vs refiner_studio: 均值+16.2%  劣化张数=82/120  严重劣化(>20%)=18
-  refiner_real_v2 vs refiner_studio: 均值+100.8%  劣化张数=120/120  严重劣化(>20%)=97

@@ -1,0 +1,107 @@
+{"id": "G1-001", "group": "G1", "instruction": "帮我把这张图抠出来", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-002", "group": "G1", "instruction": "人像抠图，要透明背景", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-003", "group": "G1", "instruction": "把主体抠出来", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-004", "group": "G1", "instruction": "抠像处理一下", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-005", "group": "G1", "instruction": "把照片里的人物抠取出来", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-006", "group": "G1", "instruction": "去背，输出透明底", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-007", "group": "G1", "instruction": "这张图需要抠图", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-008", "group": "G1", "instruction": "抠出画面中的模特", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-009", "group": "G1", "instruction": "帮我去背", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-010", "group": "G1", "instruction": "透明背景版本", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-011", "group": "G1", "instruction": "把图里的宠物抠出来", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-012", "group": "G1", "instruction": "对这张商品图抠图", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-013", "group": "G1", "instruction": "抠出人物并导出PNG", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-014", "group": "G1", "instruction": "抠取前景主体", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G1-015", "group": "G1", "instruction": "图片抠图处理", "expect": {"tools": ["matting", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-016", "group": "G2", "instruction": "把这个人放进傍晚的咖啡馆，光从左边照过来", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "background_generate", "key": "prompt", "contains": "傍晚的咖"}}, "prior": false, "spatial": null}
+{"id": "G2-017", "group": "G2", "instruction": "把人物放到夕阳下的海边", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "background_generate", "key": "prompt", "contains": "夕阳下的"}}, "prior": false, "spatial": null}
+{"id": "G2-018", "group": "G2", "instruction": "和雪原", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "background_generate", "key": "prompt", "contains": "雪原"}}, "prior": false, "spatial": null}
+{"id": "G2-019", "group": "G2", "instruction": "合成到夜晚的霓虹街头，光从左边照过来", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "background_generate", "key": "prompt", "contains": "夜晚的霓"}}, "prior": false, "spatial": null}
+{"id": "G2-020", "group": "G2", "instruction": "背景换成森林晨雾", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "background_generate", "key": "prompt", "contains": "森林晨雾"}}, "prior": false, "spatial": null}
+{"id": "G2-021", "group": "G2", "instruction": "置于现代办公室", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "background_generate", "key": "prompt", "contains": "现代办公"}}, "prior": false, "spatial": null}
+{"id": "G2-022", "group": "G2", "instruction": "把这个人放进赛博都市天台，光从左边照过来", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "background_generate", "key": "prompt", "contains": "赛博都市"}}, "prior": false, "spatial": null}
+{"id": "G2-023", "group": "G2", "instruction": "把人物放到星空下的草原", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "background_generate", "key": "prompt", "contains": "星空下的"}}, "prior": false, "spatial": null}
+{"id": "G2-024", "group": "G2", "instruction": "换个场景，要黄昏的湖边，暖一点", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-025", "group": "G2", "instruction": "把人放到雪山之巅，光从右边来", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-026", "group": "G2", "instruction": "合成一张咖啡店内的画面，色调温暖", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-027", "group": "G2", "instruction": "背景换成海滩，夕阳感觉", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-028", "group": "G2", "instruction": "换成访谈场景背景，保持自然", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-029", "group": "G2", "instruction": "换个背景：江南水乡，冷色调", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-030", "group": "G2", "instruction": "把模特置于樱花林中，光从左侧打", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-031", "group": "G2", "instruction": "换背景为太空站内，冷光", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-032", "group": "G2", "instruction": "改成城市黄昏，暖光从左边", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-033", "group": "G2", "instruction": "放进图书馆内景，要有安静的氛围", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-034", "group": "G2", "instruction": "背景换成篝火营地，暖光", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-035", "group": "G2", "instruction": "放到清晨的稻田，光线清冷", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-036", "group": "G2", "instruction": "合成到古堡庭院，光从右上方来", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-037", "group": "G2", "instruction": "换个场景到瀑布边，湿润通透", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-038", "group": "G2", "instruction": "置于极地冰原，冷色", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2-039", "group": "G2", "instruction": "把人物放进洞穴，光从背后逆光", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": false, "spatial": null}
+{"id": "G2E-040", "group": "G2E", "instruction": "把人物放进咖啡馆并加景深虚化，画面更高级", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "enhance", "export"]}, "prior": false, "spatial": null}
+{"id": "G2E-041", "group": "G2E", "instruction": "背景换成雪原，整体精修一下", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "enhance", "export"]}, "prior": false, "spatial": null}
+{"id": "G2E-042", "group": "G2E", "instruction": "合成到霓虹街头，最后锐化细节", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "enhance", "export"]}, "prior": false, "spatial": null}
+{"id": "G2E-043", "group": "G2E", "instruction": "放到海边黄昏，做出景深效果", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "enhance", "export"]}, "prior": false, "spatial": null}
+{"id": "G2E-044", "group": "G2E", "instruction": "换成森林背景，细节增强，高清导出", "expect": {"tools": ["matting", "background_generate", "lighting_estimate", "relight", "shadow_generate", "harmonize", "enhance", "export"]}, "prior": false, "spatial": null}
+{"id": "G3-045", "group": "G3", "instruction": "阴影轻一点", "expect": {"tools": ["shadow_generate", "harmonize", "export"], "param": {"tool": "shadow_generate", "key": "shadow_strength", "equals": 0.3}}, "prior": true, "spatial": null}
+{"id": "G3-046", "group": "G3", "instruction": "影子太重了，淡一些", "expect": {"tools": ["shadow_generate", "harmonize", "export"], "param": {"tool": "shadow_generate", "key": "shadow_strength", "equals": 0.3}}, "prior": true, "spatial": null}
+{"id": "G3-047", "group": "G3", "instruction": "阴影再浓一点", "expect": {"tools": ["shadow_generate", "harmonize", "export"], "param": {"tool": "shadow_generate", "key": "shadow_strength", "equals": 0.9}}, "prior": true, "spatial": null}
+{"id": "G3-048", "group": "G3", "instruction": "把影子弄淡", "expect": {"tools": ["shadow_generate", "harmonize", "export"], "param": {"tool": "shadow_generate", "key": "shadow_strength", "equals": 0.3}}, "prior": true, "spatial": null}
+{"id": "G3-049", "group": "G3", "instruction": "接触阴影深一点", "expect": {"tools": ["shadow_generate", "harmonize", "export"], "param": {"tool": "shadow_generate", "key": "shadow_strength", "equals": 0.9}}, "prior": true, "spatial": null}
+{"id": "G3-050", "group": "G3", "instruction": "阴影少一点，自然些", "expect": {"tools": ["shadow_generate", "harmonize", "export"], "param": {"tool": "shadow_generate", "key": "shadow_strength", "equals": 0.3}}, "prior": true, "spatial": null}
+{"id": "G3-051", "group": "G3", "instruction": "影子轻一些", "expect": {"tools": ["shadow_generate", "harmonize", "export"], "param": {"tool": "shadow_generate", "key": "shadow_strength", "equals": 0.3}}, "prior": true, "spatial": null}
+{"id": "G3-052", "group": "G3", "instruction": "阴影重量适中偏重", "expect": {"tools": ["shadow_generate", "harmonize", "export"], "param": {"tool": "shadow_generate", "key": "shadow_strength", "equals": 0.9}}, "prior": true, "spatial": null}
+{"id": "G3L-053", "group": "G3L", "instruction": "光线太冷了，暖一点", "expect": {"tools": ["lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G3L-054", "group": "G3L", "instruction": "画面偏暗，亮一点", "expect": {"tools": ["lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G3L-055", "group": "G3L", "instruction": "色调太暖，冷一些", "expect": {"tools": ["lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G3L-056", "group": "G3L", "instruction": "更亮一些", "expect": {"tools": ["lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G3L-057", "group": "G3L", "instruction": "暗一点，氛围感", "expect": {"tools": ["lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G3L-058", "group": "G3L", "instruction": "暖色调处理", "expect": {"tools": ["lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G3L-059", "group": "G3L", "instruction": "冷光感觉", "expect": {"tools": ["lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G3L-060", "group": "G3L", "instruction": "亮度提高一点", "expect": {"tools": ["lighting_estimate", "relight", "shadow_generate", "harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G3D-061", "group": "G3D", "instruction": "光从左边来", "expect": {"tools": ["relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "relight", "key": "light_dir.azimuth", "equals": 180.0}}, "prior": true, "spatial": null}
+{"id": "G3D-062", "group": "G3D", "instruction": "光从右边打", "expect": {"tools": ["relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "relight", "key": "light_dir.azimuth", "equals": 0.0}}, "prior": true, "spatial": null}
+{"id": "G3D-063", "group": "G3D", "instruction": "头顶打光", "expect": {"tools": ["relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "relight", "key": "light_dir.azimuth", "equals": 0.0}}, "prior": true, "spatial": null}
+{"id": "G3D-064", "group": "G3D", "instruction": "逆光效果", "expect": {"tools": ["relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "relight", "key": "light_dir.azimuth", "equals": 90.0}}, "prior": true, "spatial": null}
+{"id": "G3D-065", "group": "G3D", "instruction": "左侧来光，暖一点", "expect": {"tools": ["relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "relight", "key": "light_dir.azimuth", "equals": 180.0}}, "prior": true, "spatial": null}
+{"id": "G3D-066", "group": "G3D", "instruction": "右侧光，冷一些", "expect": {"tools": ["relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "relight", "key": "light_dir.azimuth", "equals": 0.0}}, "prior": true, "spatial": null}
+{"id": "G3D-067", "group": "G3D", "instruction": "正上方光源", "expect": {"tools": ["relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "relight", "key": "light_dir.azimuth", "equals": 0.0}}, "prior": true, "spatial": null}
+{"id": "G3D-068", "group": "G3D", "instruction": "背后打光", "expect": {"tools": ["relight", "shadow_generate", "harmonize", "export"], "param": {"tool": "relight", "key": "light_dir.azimuth", "equals": 90.0}}, "prior": true, "spatial": null}
+{"id": "G4-069", "group": "G4", "instruction": "背景虚化一些", "expect": {"tools": ["enhance", "export"]}, "prior": true, "spatial": null}
+{"id": "G4-070", "group": "G4", "instruction": "画面锐化一下", "expect": {"tools": ["enhance", "export"]}, "prior": true, "spatial": null}
+{"id": "G4-071", "group": "G4", "instruction": "更清晰一点", "expect": {"tools": ["enhance", "export"]}, "prior": true, "spatial": null}
+{"id": "G4-072", "group": "G4", "instruction": "加点景深效果", "expect": {"tools": ["enhance", "export"]}, "prior": true, "spatial": null}
+{"id": "G4-073", "group": "G4", "instruction": "细节增强处理", "expect": {"tools": ["enhance", "export"]}, "prior": true, "spatial": null}
+{"id": "G4-074", "group": "G4", "instruction": "高清精修", "expect": {"tools": ["enhance", "export"]}, "prior": true, "spatial": null}
+{"id": "G4H-075", "group": "G4H", "instruction": "色彩再和谐一点", "expect": {"tools": ["harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G4H-076", "group": "G4H", "instruction": "前景背景融合得更自然", "expect": {"tools": ["harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G4H-077", "group": "G4H", "instruction": "色调协调一下", "expect": {"tools": ["harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G4H-078", "group": "G4H", "instruction": "更和谐统一", "expect": {"tools": ["harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G4H-079", "group": "G4H", "instruction": "融合感加强", "expect": {"tools": ["harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G4H-080", "group": "G4H", "instruction": "画面协调些", "expect": {"tools": ["harmonize", "export"]}, "prior": true, "spatial": null}
+{"id": "G5-081", "group": "G5", "instruction": "背景换回上一版，但是保留现在的光线", "expect": {"kind": "rollback", "role": "background_generate", "version": 2, "preserve": ["lighting_estimate", "relight"]}, "prior": true, "spatial": null}
+{"id": "G5-082", "group": "G5", "instruction": "背景换回第一版", "expect": {"kind": "rollback", "role": "background_generate", "version": 1, "preserve": []}, "prior": true, "spatial": null}
+{"id": "G5-083", "group": "G5", "instruction": "换回最初背景", "expect": {"kind": "rollback", "role": "background_generate", "version": 1, "preserve": []}, "prior": true, "spatial": null}
+{"id": "G5-084", "group": "G5", "instruction": "背景恢复到之前那版，保留现在的光影", "expect": {"kind": "rollback", "role": "background_generate", "version": 2, "preserve": ["relight"]}, "prior": true, "spatial": null}
+{"id": "G5-085", "group": "G5", "instruction": "回到上一版背景", "expect": {"kind": "rollback", "role": "background_generate", "version": 2, "preserve": []}, "prior": true, "spatial": null}
+{"id": "G5-086", "group": "G5", "instruction": "光照换回上一版", "expect": {"kind": "rollback", "role": "lighting_estimate", "version": 1, "preserve": []}, "prior": true, "spatial": null}
+{"id": "G5-087", "group": "G5", "instruction": "光线恢复到第一版", "expect": {"kind": "rollback", "role": "lighting_estimate", "version": 1, "preserve": []}, "prior": true, "spatial": null}
+{"id": "G5-088", "group": "G5", "instruction": "打光回退到上一版，保留背景", "expect": {"kind": "rollback", "role": "relight", "version": 1, "preserve": ["background_generate"]}, "prior": true, "spatial": null}
+{"id": "G5-089", "group": "G5", "instruction": "光影还原到最初，背景别动", "expect": {"kind": "rollback", "role": "relight", "version": 1, "preserve": ["background_generate"]}, "prior": true, "spatial": null}
+{"id": "G5-090", "group": "G5", "instruction": "抠图换回第一版", "expect": {"kind": "rollback", "role": "matting", "version": 1, "preserve": []}, "prior": true, "spatial": null}
+{"id": "G5-091", "group": "G5", "instruction": "和谐化回到上一版", "expect": {"kind": "rollback", "role": "harmonize", "version": 1, "preserve": []}, "prior": true, "spatial": null}
+{"id": "G5-092", "group": "G5", "instruction": "阴影恢复到之前那版", "expect": {"kind": "rollback", "role": "shadow_generate", "version": 1, "preserve": []}, "prior": true, "spatial": null}
+{"id": "G6-093", "group": "G6", "instruction": "点击这里，把这个主体抠出来", "expect": {"tools": ["matting", "export"], "spatial_param": {"tool": "matting", "key": "mode", "equals": "trimap"}}, "prior": false, "spatial": {"click": {"x": 120, "y": 260}}}
+{"id": "G6-094", "group": "G6", "instruction": "框选这个区域抠图", "expect": {"tools": ["matting", "export"], "spatial_param": {"tool": "matting", "key": "mode", "equals": "trimap"}}, "prior": false, "spatial": {"box": [10, 10, 200, 300]}}
+{"id": "G6-095", "group": "G6", "instruction": "点击人物头部，抠取主体", "expect": {"tools": ["matting", "export"], "spatial_param": {"tool": "matting", "key": "mode", "equals": "trimap"}}, "prior": false, "spatial": {"click": {"x": 300, "y": 88}}}
+{"id": "G6-096", "group": "G6", "instruction": "按框选范围去背", "expect": {"tools": ["matting", "export"], "spatial_param": {"tool": "matting", "key": "mode", "equals": "trimap"}}, "prior": false, "spatial": {"box": [0, 0, 500, 500]}}
+{"id": "G6-097", "group": "G6", "instruction": "点一下这里抠像", "expect": {"tools": ["matting", "export"], "spatial_param": {"tool": "matting", "key": "mode", "equals": "trimap"}}, "prior": false, "spatial": {"click": {"x": 88, "y": 220}}}
+{"id": "G6-098", "group": "G6", "instruction": "框出人物并抠图", "expect": {"tools": ["matting", "export"], "spatial_param": {"tool": "matting", "key": "mode", "equals": "trimap"}}, "prior": false, "spatial": {"box": [5, 5, 120, 220]}}
+{"id": "G7-099", "group": "G7", "instruction": "把人物放进咖啡馆", "expect": {"error": "E_INVALID_INPUT"}, "prior": false, "spatial": null}
+{"id": "G7-100", "group": "G7", "instruction": "合成到雪山背景", "expect": {"error": "E_INVALID_INPUT"}, "prior": false, "spatial": null}
+{"id": "G7-101", "group": "G7", "instruction": "放到海边", "expect": {"error": "E_INVALID_INPUT"}, "prior": false, "spatial": null}
+{"id": "G7-102", "group": "G7", "instruction": "背景换成森林", "expect": {"error": "E_INVALID_INPUT"}, "prior": false, "spatial": null}
+{"id": "G7-103", "group": "G7", "instruction": "置于星空之下", "expect": {"error": "E_INVALID_INPUT"}, "prior": false, "spatial": null}
+{"id": "G7-104", "group": "G7", "instruction": "换个场景到草原", "expect": {"error": "E_INVALID_INPUT"}, "prior": false, "spatial": null}
+{"id": "G8-105", "group": "G8", "instruction": "把阴影回退到上一版，保留现在的光", "expect": {"kind": "rollback", "role": "shadow_generate", "version": 1, "preserve": ["relight"], "known_limit": true}, "prior": true, "spatial": null}
+{"id": "G8-106", "group": "G8", "instruction": "影子换回第一版，保留光照", "expect": {"kind": "rollback", "role": "shadow_generate", "version": 1, "preserve": ["lighting_estimate"], "known_limit": true}, "prior": true, "spatial": null}
+{"id": "G8-107", "group": "G8", "instruction": "只导出成 PNG，不要再改画面", "expect": {"tools": ["export"], "known_limit": true}, "prior": true, "spatial": null}

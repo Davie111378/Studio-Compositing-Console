@@ -15,7 +15,7 @@ from agent.dag.models import DAGNode, PlanDAG, Quality
 from agent.dag.validate import validate_dag
 from agent.errors import E_PLANNER_EXHAUSTED, E_PLANNER_LLM_UNAVAILABLE, AgentError
 from agent.planner.base import Planner, PlanningRequest, PlanningResult
-from agent.schema import load_registry
+from agent.schema import load_registry, validate_payload
 
 logger = logging.getLogger("agent.planner.llm")
 
@@ -39,7 +39,11 @@ _SYSTEM_PROMPT = """你是图像合成 Agent 的 Planner。把用户指令解析
 3. 用户上传图用 "asset://UPLOAD_0"（第 2 张为 asset://UPLOAD_1）。
 4. 完整合成链 = matting → background_generate → lighting_estimate → relight → shadow_generate → harmonize → export；
    matting 与 background_generate 可并行（都无依赖）。局部修改只输出受影响的下游子链。
-5. 不新增工具、不改工具输入输出键名、不输出解释文字。
+5. 引用型键（*_png、image、light_dir 等）只允许填引用 "@节点id.输出键" 或 "asset://UPLOAD_n"；
+   严禁内联数值、数组或自造对象（如 light_dir 必须写 "@n?.light_dir"，禁止写 [x,y,z]）。
+6. 用户要把前景放进"另一张上传的照片"时：跳过 background_generate，把那张照片的 asset://UPLOAD_n
+   直接作为 lighting_estimate 的 bg_png 和 shadow_generate 的 background_png。
+7. 不新增工具、不改工具输入输出键名、不输出解释文字。
 
 示例（把人物放进傍晚的咖啡馆）：
 {example}"""
@@ -94,6 +98,11 @@ class LLMPlanner(Planner):
 
     async def plan(self, req: PlanningRequest) -> PlanningResult:
         messages = [{"role": "system", "content": self._system}]
+        if req.asset_uris:
+            n = len(req.asset_uris)
+            messages.append({"role": "system",
+                             "content": f"本次会话可用上传图共 {n} 张：asset://UPLOAD_0 到 asset://UPLOAD_{n - 1}，"
+                                        "指令中不存在的上传图编号不得使用。"})
         if req.spatial:
             messages.append({"role": "system",
                              "content": f"用户空间指代：{json.dumps(req.spatial, ensure_ascii=False)}"})
@@ -104,14 +113,40 @@ class LLMPlanner(Planner):
                 content = await self._call(messages)
                 dag = self._parse(content, req)
                 validate_dag(dag)
+                self._validate_inputs(dag)
                 return PlanningResult(dag=dag, planner=self.name)
             except (httpx.HTTPError, AgentError, KeyError, TypeError, ValueError) as e:
                 last_err = e
                 logger.warning("LLM planner attempt failed: %s", e)
+                feedback = (f"你的输出未通过校验：{e}。请修正后重新输出完整 JSON 计划（只输出 JSON，"
+                            "所有图像/遮罩/光照等键必须写上游引用 \"@节点id.输出键\"，禁止内联数值或数组）。")
+                if messages[-1]["role"] == "user" and messages[-1]["content"].startswith("你的输出未通过校验"):
+                    messages[-1]["content"] = feedback
+                else:
+                    messages.append({"role": "user", "content": feedback})
         if isinstance(last_err, AgentError) and last_err.code == E_PLANNER_LLM_UNAVAILABLE:
             raise last_err
         raise AgentError(E_PLANNER_EXHAUSTED, f"LLM Planner 连续 {self.max_retries + 1} 次失败",
                          detail=str(last_err))
+
+    @staticmethod
+    def _validate_inputs(dag: PlanDAG) -> None:
+        """计划期输入类型校验：引用 "@..." 是运行期才解析的合法占位，其余按 Schema 校验。
+
+        执行期才校验会让坏计划在跑到一半时失败，代价远高于规划期重试，故提前至此。
+        """
+        registry = load_registry()
+        for n in dag.nodes:
+            props = registry[n.tool]["input"].get("properties", {})
+            for key, value in (n.inputs or {}).items():
+                if isinstance(value, str) and value.startswith(("@", "asset://", "artifact://")):
+                    continue
+                sch = props.get(key)
+                if not sch:
+                    continue  # 未声明键交由执行端兜底校验
+                errs = validate_payload(sch, value, f"节点 {n.id}({n.tool}).inputs.{key}")
+                if errs:
+                    raise AgentError(E_PLANNER_EXHAUSTED, "计划输入类型不合法", detail=errs)
 
     async def _call(self, messages: list[dict]) -> str:
         if not self.configured(self.api_base, self.model):

@@ -17,12 +17,14 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from aiservice import export_impl
-from aiservice.common import ToolFailure, ensure_out_dir
+from aiservice.common import ToolFailure, ensure_out_dir, load_project_env
 from aiservice.diffusion import impl as t02
 from aiservice.harmonization import impl as t06_t07
 from aiservice.lighting import impl as t03_t04
 from aiservice.matting import impl as t01
 from aiservice.shadow import impl as t05
+
+load_project_env()  # 独立进程读项目根 .env（DASHSCOPE_API_KEY 等）；嵌入模式幂等
 
 logger = logging.getLogger("aiservice")
 

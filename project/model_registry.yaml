@@ -26,7 +26,15 @@ models:
     metrics: {}
     status: prod
     fallback: null
-    notes: "mock 渐变生成；B5/B7 接 SDXL/FLUX + LoRA"
+    notes: "mock 渐变生成（确定性，测试可复现）；B5/B7 接 SDXL/FLUX + LoRA"
+  - tool: background_generate
+    name: qwen-t2i
+    version: v0.9.0-qwen-planned
+    path: "dashscope://ImageSynthesis (T2I_MODEL=wanx2.1-t2i-turbo)"
+    metrics: {}
+    status: planned   # 实现已设计（官方 SDK + 下载白名单/DNS 公网校验），因安全插件 Write-scan 拦截暂未落盘，见 docs/merge-report-2026-09-15.md §3
+    fallback: "mock 渐变（T2I_PROVIDER=auto 无 key 自动回落）"
+    notes: "千问文生图档：.env 填 DASHSCOPE_API_KEY 即启用；深度图用先验渐变+亮度代理近似，B 组后续换真实深度估计"
 
   # ---- T03 lighting_estimate ----
   - tool: lighting_estimate

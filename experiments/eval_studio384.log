@@ -1,9 +1,0 @@
-[infer-size] 384 (训练尺寸, 取自 refiner_studio/config.json)
-[refine] studio <- best.pt (epoch=79, best=0.02966) device=cuda
-[refine] 0 preds in 0s -> D:\AIcode\生产实习\experiments\real_refiner_eval\preds_studio_384
-[coarse ] SAD=15038.60 MSE=0.009911 Grad=1723.55 Conn=0.1446 | hm: SAD=147870.25 Grad=4390.61 Conn=2.8402 | p3m_np: SAD=10570.48 Grad=1701.77 Conn=0.0402 | p3m_p: SAD=8880.19 Grad=1531.96 Conn=0.0333
-[studio] SAD=300174.77 MSE=0.148213 Grad=1949.50 Conn=1.6319 | hm: SAD=180873.13 Grad=4476.84 Conn=3.4403 | p3m_np: SAD=282309.74 Grad=1928.41 Conn=1.4307 | p3m_p: SAD=327583.93 Grad=1768.41 Conn=1.6886
-[gate] SAD drop=-1896.0% Grad_ok=False Conn_ok=False -> CHECK
-[studio-regression] n=24 refiner_studio L1=1.218% studio L1=1.218% (+0.0%)
-[panel] -> D:\AIcode\生产实习\experiments\real_refiner_eval\panel_studio.png (col: img|coarse|refined|GT)
-[eval-real] DONE -> D:\AIcode\生产实习\experiments\real_refiner_eval\summary_studio.json

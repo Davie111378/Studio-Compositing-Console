@@ -23,6 +23,10 @@ def tmp_env(tmp_path, monkeypatch):
     monkeypatch.setenv("RUNS_DIR", str(tmp_path / "runs"))
     monkeypatch.setenv("MOCK_DELAY_MS", "0")
     monkeypatch.delenv("AI_SERVICE_URL", raising=False)
+    # 千问相关 key 全部剥离：单测永远走规则 Planner / 规则 Critic，不触网
+    monkeypatch.delenv("DASHSCOPE_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    monkeypatch.delenv("VLM_API_KEY", raising=False)
     monkeypatch.delenv("LLM_API_BASE", raising=False)
     monkeypatch.setenv("PLANNER_MODE", "auto")
     from agent.config import reset_settings

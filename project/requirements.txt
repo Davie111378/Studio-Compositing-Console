@@ -11,7 +11,13 @@ opencv-python>=4.9   # B 组算法引擎（bsrc/）依赖；缺失时 ai-service
 rembg>=0.1.6         # T01 离线神经网络抠图（onnxruntime）；首次使用会下载 REMBG_MODEL 权重
 onnxruntime>=1.17
 
-# ---- 以下为后续接入真实模型时按需安装（B 组/C 组自行添加）----
+# ---- 千问（DashScope）官方 SDK：T02 文生图 / 云端 ASR 档（可选，.env 填 key 即用）----
+# dashscope>=1.23
+
+# ---- 语音链路可选档（C3；不装则自动降级，见 speech/）----
+# faster-whisper>=1.0          # 本地 ASR（CPU int8 + Silero VAD，全离线）
+# pyttsx3>=2.90                # 服务端 TTS 兜底（Windows SAPI5 本地引擎）
+
+# ---- 以下为后续接入真实模型时按需安装（B 组自行添加）----
 # torch / torchvision          # BiRefNet, SAM2 推理（就绪后设 BIREFNET_WEIGHT_PATH 自动启用真实抠图链）
 # diffusers / transformers     # SDXL / IC-Light
-# openai-whisper / funasr      # 本地 ASR

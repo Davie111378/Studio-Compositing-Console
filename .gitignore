@@ -37,8 +37,13 @@ ehthumbs.db
 # ===== Unrelated project: thesis-proposal materials (separate topic) =====
 开题材料/
 
-# ===== Unrelated project: ImageCompose UI/website (separate from this repo) =====
-imagecompose-site/
+# ===== ImageCompose 前端（已合并进 project/frontend/，重型/可再生资产留本地不入库）=====
+project/frontend/shots/
+project/frontend/design_v2/
+project/frontend/*.pdf
+project/frontend/tools/node_modules/
+project/frontend/media/video/critic_reroll.mp4
+project/frontend/media/video/relight.mp4
 ImageCompose_*.html
 
 # ===== Unrelated presentations (career planning / other projects) =====

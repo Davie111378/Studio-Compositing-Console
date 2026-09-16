@@ -46,30 +46,31 @@ class VLMCritic(BaseCritic):
         if not self.available():
             return self._tag(self.fallback.score(run), "VLM 未配置，规则 Critic 兜底")
         try:
-            scores = self._vlm_score(run)
+            scores, vlm_comment = self._vlm_score(run)
+            overall = round(sum(WEIGHTS[d] * scores[d] for d in DIMS), 1)
+            lowest = min(DIMS, key=lambda d: scores[d])
+            threshold = self.settings.critic_threshold
+            if overall >= threshold:
+                action, rerun_role = "pass", None
+            elif run.replan_count >= self.settings.max_replans:
+                action, rerun_role = "force_pass", None
+            else:
+                rerun_role = DIM_TO_TOOL[lowest]
+                action = "rerun" if run.dag.node_by_role(rerun_role) else "force_pass"
+            return CriticResult(scores=scores, overall=overall, threshold=threshold,
+                                passed=action == "pass", lowest_dim=lowest, action=action,
+                                rerun_role=rerun_role, comment=f"VLM：{vlm_comment}")
         except Exception as e:
             logger.warning("VLM 打分失败，回落规则 Critic: %s", e)
             return self._tag(self.fallback.score(run), f"VLM 失败回落：{e}")
-        overall = round(sum(WEIGHTS[d] * scores[d] for d in DIMS), 1)
-        lowest = min(DIMS, key=lambda d: scores[d])
-        threshold = self.settings.critic_threshold
-        if overall >= threshold:
-            action, rerun_role = "pass", None
-        elif run.replan_count >= self.settings.max_replans:
-            action, rerun_role = "force_pass", None
-        else:
-            rerun_role = DIM_TO_TOOL[lowest]
-            action = "rerun" if run.dag.node_by_role(rerun_role) else "force_pass"
-        return CriticResult(scores=scores, overall=overall, threshold=threshold,
-                            passed=action == "pass", lowest_dim=lowest, action=action,
-                            rerun_role=rerun_role, comment=f"VLM：{scores.get('comment', '')}")
 
     @staticmethod
     def _tag(r: CriticResult, note: str) -> CriticResult:
         r.comment = f"{r.comment} [{note}]" if r.comment else note
         return r
 
-    def _vlm_score(self, run: RunState) -> dict:
+    def _vlm_score(self, run: RunState) -> tuple[dict, str]:
+        """返回 ({维度: 分数}, 一句话评语)；comment 不进 scores（CriticResult.scores 为纯数字）。"""
         image_uri = self._final_image(run)
         if not image_uri:
             raise ValueError("无可用最终图")
@@ -97,8 +98,7 @@ class VLMCritic(BaseCritic):
             content = resp.json()["choices"][0]["message"]["content"]
         data = json.loads(content)
         out = {d: float(data[d]) for d in DIMS}
-        out["comment"] = str(data.get("comment", ""))
-        return out
+        return out, str(data.get("comment", ""))
 
     def _final_image(self, run: RunState) -> str | None:
         for role in ("export", "harmonize", "shadow_generate"):

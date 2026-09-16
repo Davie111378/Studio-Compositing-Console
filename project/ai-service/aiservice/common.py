@@ -8,10 +8,31 @@ Mock 实现约定（B 组替换时保持）：
 from __future__ import annotations
 
 import hashlib
+import os
 import random
 from pathlib import Path
 
 from PIL import Image, ImageDraw
+
+
+def load_project_env() -> None:
+    """加载项目根 .env（KEY=VALUE，不覆盖已有环境变量）。
+
+    agent 嵌入模式下 agent.config 已加载过（幂等）；独立进程（run.py）依赖此调用
+    读取 DASHSCOPE_API_KEY 等千问配置。
+    """
+    path = Path(__file__).resolve().parents[2] / ".env"
+    if not path.exists():
+        return
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
 
 
 class ToolFailure(Exception):

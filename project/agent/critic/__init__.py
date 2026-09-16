@@ -9,8 +9,12 @@ from agent.critic.vlm_critic import VLMCritic
 
 
 def build_critic(settings: Settings) -> BaseCritic:
-    if settings.planner_mode != "rule" and settings.llm_api_base and settings.llm_model:
-        return VLMCritic(settings)
+    # VLM_* 优先（视觉模型与文本 Planner 分开配），回落 LLM_*
+    api_base = settings.vlm_api_base or settings.llm_api_base
+    api_key = settings.vlm_api_key or settings.llm_api_key
+    model = settings.vlm_model or settings.llm_model
+    if settings.planner_mode != "rule" and api_base and model:
+        return VLMCritic(settings, api_base=api_base, api_key=api_key, model=model)
     return RuleCritic(settings)
 
 

@@ -20,8 +20,8 @@ PROJECT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT))
 sys.path.insert(0, str(PROJECT / "ai-service"))
 
-DEFAULT_IMAGE = PROJECT.parent / "imagecompose-site" / "media" / "source_original.png"
-DEFAULT_BG = PROJECT.parent / "imagecompose-site" / "media" / "scene_lakeside.jpg"
+DEFAULT_IMAGE = PROJECT / "frontend" / "media" / "source_original.png"
+DEFAULT_BG = PROJECT / "frontend" / "media" / "scene_lakeside.jpg"
 
 
 def main() -> int:

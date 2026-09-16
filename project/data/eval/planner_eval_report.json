@@ -1,0 +1,144 @@
+{
+  "planner": "RulePlanner（确定性关键词路由）",
+  "n_cases": 107,
+  "tool_acc": 0.9533,
+  "order_acc": 0.9813,
+  "param_acc": 0.9626,
+  "spatial_acc": 1.0,
+  "plan_latency_ms": {
+    "avg": 0,
+    "max": 0
+  },
+  "per_group": {
+    "G1": {
+      "n": 15,
+      "tool": 1.0,
+      "order": 1.0,
+      "param": 1.0
+    },
+    "G2": {
+      "n": 24,
+      "tool": 1.0,
+      "order": 1.0,
+      "param": 1.0
+    },
+    "G2E": {
+      "n": 5,
+      "tool": 1.0,
+      "order": 1.0,
+      "param": 1.0
+    },
+    "G3": {
+      "n": 8,
+      "tool": 1.0,
+      "order": 1.0,
+      "param": 1.0
+    },
+    "G3D": {
+      "n": 8,
+      "tool": 1.0,
+      "order": 1.0,
+      "param": 1.0
+    },
+    "G3L": {
+      "n": 8,
+      "tool": 1.0,
+      "order": 1.0,
+      "param": 1.0
+    },
+    "G4": {
+      "n": 6,
+      "tool": 1.0,
+      "order": 1.0,
+      "param": 1.0
+    },
+    "G4H": {
+      "n": 6,
+      "tool": 1.0,
+      "order": 1.0,
+      "param": 1.0
+    },
+    "G5": {
+      "n": 12,
+      "tool": 0.8333,
+      "order": 0.9167,
+      "param": 0.8333
+    },
+    "G6": {
+      "n": 6,
+      "tool": 1.0,
+      "order": 1.0,
+      "param": 1.0
+    },
+    "G7": {
+      "n": 6,
+      "tool": 1.0,
+      "order": 1.0,
+      "param": 1.0
+    },
+    "G8": {
+      "n": 3,
+      "tool": 0.0,
+      "order": 0.6667,
+      "param": 0.3333
+    }
+  },
+  "fail_cases": [
+    {
+      "id": "G5-088",
+      "group": "G5",
+      "tool": false,
+      "order": false,
+      "param": false,
+      "spatial": true,
+      "ms": 0,
+      "kind": "rollback",
+      "got": "{\"role\": \"background_generate\", \"version\": 2, \"preserve\": [\"relight\"]}"
+    },
+    {
+      "id": "G5-089",
+      "group": "G5",
+      "tool": false,
+      "order": true,
+      "param": false,
+      "spatial": true,
+      "ms": 0,
+      "kind": "rollback",
+      "got": "{\"role\": \"background_generate\", \"version\": 1, \"preserve\": []}"
+    },
+    {
+      "id": "G8-105",
+      "group": "G8",
+      "tool": false,
+      "order": true,
+      "param": false,
+      "spatial": true,
+      "ms": 0,
+      "kind": "rollback",
+      "got": "{\"role\": \"relight\", \"version\": 1, \"preserve\": [\"shadow_generate\"]}"
+    },
+    {
+      "id": "G8-106",
+      "group": "G8",
+      "tool": false,
+      "order": true,
+      "param": false,
+      "spatial": true,
+      "ms": 0,
+      "kind": "rollback",
+      "got": "{\"role\": \"lighting_estimate\", \"version\": 1, \"preserve\": [\"relight\", \"shadow_generate\"]}"
+    },
+    {
+      "id": "G8-107",
+      "group": "G8",
+      "tool": false,
+      "order": false,
+      "param": true,
+      "spatial": true,
+      "ms": 0,
+      "kind": "plan",
+      "got": "harmonize -> export"
+    }
+  ],
+  "generated_at": "2026-09-15 00:51:19"
+}

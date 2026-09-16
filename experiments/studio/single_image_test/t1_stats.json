@@ -1,8 +1,0 @@
-{
-  "coarse_time_s": 8.98,
-  "refine_time_s": 0.85,
-  "mean_abs_diff": 0.38358,
-  "changed_pixels_gt10": "50.86%",
-  "coarse_fg_ratio": "11.7%",
-  "refined_fg_ratio": "46.6%"
-}

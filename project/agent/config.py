@@ -1,4 +1,8 @@
-"""全局配置：全部由环境变量驱动，代码内不给魔法数。"""
+"""全局配置：全部由环境变量驱动，代码内不给魔法数。
+
+支持项目根目录 `.env`（复制 `.env.example` 填写），启动时自动加载；
+真实环境变量优先于 `.env`，已加载的键不覆盖。
+"""
 
 from __future__ import annotations
 
@@ -11,11 +15,38 @@ def _project_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+def _load_dotenv() -> None:
+    """极简 .env 加载：KEY=VALUE 每行一条，# 注释；不覆盖已存在的环境变量。"""
+    path = _project_root() / ".env"
+    if not path.exists():
+        return
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+_load_dotenv()
+
+
 def _env_bool(name: str, default: bool) -> bool:
     v = os.environ.get(name)
     if v is None:
         return default
     return v.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _dashscope_key() -> str:
+    return os.environ.get("DASHSCOPE_API_KEY", "").strip()
+
+
+# 千问 OpenAI 兼容端点（.env 只填 DASHSCOPE_API_KEY 时作为 llm/vlm 缺省，"填 key 即用"）
+_DASHSCOPE_COMPAT_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 
 @dataclass
@@ -53,10 +84,29 @@ class Settings:
     # ---- Planner ----
     # planner_mode: auto（配了 LLM 用 LLM，失败回落规则）| rule（只用规则）| llm（只用 LLM）
     planner_mode: str = field(default_factory=lambda: os.environ.get("PLANNER_MODE", "auto"))
-    llm_api_base: str = field(default_factory=lambda: os.environ.get("LLM_API_BASE", "").rstrip("/"))
-    llm_api_key: str = field(default_factory=lambda: os.environ.get("LLM_API_KEY", ""))
-    llm_model: str = field(default_factory=lambda: os.environ.get("LLM_MODEL", ""))
+    # 千问（DashScope OpenAI 兼容模式）：LLM_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1
+    # 只填 DASHSCOPE_API_KEY 时，LLM 端点/模型/密钥全部取千问缺省，无需逐项配置。
+    llm_api_base: str = field(default_factory=lambda: (
+        os.environ.get("LLM_API_BASE", "").rstrip("/")
+        or (_DASHSCOPE_COMPAT_BASE if _dashscope_key() else "")
+    ))
+    llm_api_key: str = field(default_factory=lambda: os.environ.get("LLM_API_KEY", "") or _dashscope_key())
+    llm_model: str = field(default_factory=lambda: (
+        os.environ.get("LLM_MODEL", "") or ("qwen-plus" if _dashscope_key() else "")
+    ))
     llm_timeout_s: float = field(default_factory=lambda: float(os.environ.get("LLM_TIMEOUT_S", "20")))
+
+    # ---- VLM Critic（缺省回落 LLM_*；视觉打分建议 qwen-vl-max）----
+    vlm_api_base: str = field(default_factory=lambda: (
+        os.environ.get("VLM_API_BASE", "").rstrip("/")
+        or (_DASHSCOPE_COMPAT_BASE if _dashscope_key() else "")
+    ))
+    vlm_api_key: str = field(default_factory=lambda: (
+        os.environ.get("VLM_API_KEY", "") or _dashscope_key()
+    ))
+    vlm_model: str = field(default_factory=lambda: (
+        os.environ.get("VLM_MODEL", "") or ("qwen-vl-max" if _dashscope_key() else "")
+    ))
 
     # ---- 日志 ----
     log_level: str = field(default_factory=lambda: os.environ.get("LOG_LEVEL", "INFO"))

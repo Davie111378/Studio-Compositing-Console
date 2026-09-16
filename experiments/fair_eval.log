@@ -1,6 +1,0 @@
-coarse@512(原始)           SAD=  16876.8 MSE=0.00580 Grad=  1554.2 Conn=0.0768
-coarse@384往返             SAD=  18272.6 MSE=0.00594 Grad=  1676.1 Conn=0.0828
-preds_v3_384@384         SAD=  15506.8 MSE=0.00588 Grad=  1657.0 Conn=0.0799
-
-refined vs coarse@512  : SAD -8.1%  Grad +6.6%  Conn +3.9%
-refined vs coarse@384rt : SAD -15.1%  Grad -1.1%  Conn -3.5%

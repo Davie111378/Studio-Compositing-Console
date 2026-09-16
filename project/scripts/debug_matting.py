@@ -20,7 +20,7 @@ from aiservice.matting.impl import (
 OUT = PROJECT / "data" / "artifacts" / "debug_matting"
 OUT.mkdir(parents=True, exist_ok=True)
 
-img_path = sys.argv[1] if len(sys.argv) > 1 else str(PROJECT.parent / "imagecompose-site" / "media" / "source_original.png")
+img_path = sys.argv[1] if len(sys.argv) > 1 else str(PROJECT / "frontend" / "media" / "source_original.png")
 src = Image.open(img_path).convert("RGB")
 src.save(OUT / "src.png")
 

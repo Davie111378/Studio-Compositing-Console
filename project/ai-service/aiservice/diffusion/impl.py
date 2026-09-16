@@ -1,17 +1,22 @@
-"""T02 background_generate —— mock 实现。
+"""T02 background_generate —— 千问文生图真实档 + 程序化渐变 mock 回落。
 
-算法：prompt 关键词 -> 场景色板，程序化渐变 + 光晕 + 噪点 + 暗角；同步产出深度图。
-B 组替换点：SDXL/FLUX + ControlNet(depth) 推理，契约不变；depth_png 必须保留（T03/T05/T07 依赖）。
+真实档：T2I_MODEL + DASHSCOPE_API_KEY 配置后走千问文生图（diffusion/t2i.py）；
+任何失败（未配置/超时/安全拦截/网络）自动回落本文件的关键词渐变 mock。
+契约不变：bg_png + depth_png（T03/T05/T07 依赖），失败抛 ToolFailure。
 """
 
 from __future__ import annotations
 
+import logging
 import math
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter
 
 from aiservice.common import ensure_out_dir, save_png, seeded_random
+from aiservice.diffusion import t2i
+
+logger = logging.getLogger("aiservice.t02")
 
 # 关键词 -> (上色, 下色, 光晕色)
 _PALETTES: list[tuple[tuple[str, ...], tuple[tuple[int, int, int], tuple[int, int, int], tuple[int, int, int]]]] = [
@@ -51,6 +56,14 @@ def run(inputs: dict, options: dict, out_dir: Path, root: Path) -> dict:
     base = 512 if quality == "draft" else 1024
     w = int(size.get("width", base))
     h = int(size.get("height", base))
+
+    # 真实档优先：千问文生图；失败回落程序化渐变（L3 降级，契约不变）
+    if t2i.configured():
+        try:
+            return t2i.generate(prompt, w, h, out_dir, root)
+        except Exception as e:  # noqa: BLE001 —— 任何失败都降级，不阻塞合成链
+            logger.warning("千问文生图失败，回落程序化渐变 mock: %s", e)
+
     rng = seeded_random("bg", prompt, quality)
 
     top, bottom, glow = _pick(prompt)
