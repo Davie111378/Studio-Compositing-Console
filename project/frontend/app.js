@@ -678,40 +678,32 @@ function buildIndex() {
    工作室引擎：INTRO / CREATE / RUN / SUMMARY / REPLAY 五态。
    Job Timeline = 动画控制器：真实状态低频轮询，视觉状态 60fps 插值。
    全部同源相对路径（dev_server.py 反代 /api、/healthz、/artifacts）。
-   API 基址可覆盖：meta[imc-api-base] 或 ?api=，仅接受 http/https，默认同源。
+   API 基址恒同源，不接受运行时覆盖（见下方说明）。
    ════════════════════════════════════════════════════════════════ */
-var API_ORIGIN = (function () {
-  var meta = document.querySelector('meta[name="imc-api-base"]');
-  var q = new URLSearchParams(location.search).get('api');
-  var base = String(q || (meta && meta.content) || '').trim().replace(/\/+$/, '');
-  if (!base || !/^https?:\/\//i.test(base)) return location.origin;
-  try { return new URL(base, location.href).origin; } catch (e) { return location.origin; }
-})();
+/* 全站 fetch 恒用同源相对路径（dev_server.py 反代 /api、/healthz、/artifacts、/speech）。
+   2026-09-15 安全收敛：移除 ?api= / meta[imc-api-base] 基址覆盖——那会把整页 API 流量
+   指向任意主机（SSRF 滥用面）。路径模板必须是 / 开头的字面量，动态段经 safePathSeg
+   白名单校验；相对路径在浏览器中不可能发出跨域请求，无需再用 location 拼绝对地址。 */
+function apiUrl(pathTmpl, params) {
+  var p = String(pathTmpl || '');
+  if (p.charAt(0) !== '/') throw new Error('api path must start with /: ' + p);
+  var out = p.replace(/:([A-Za-z_][A-Za-z0-9_]*)/g, function (_, k) {
+    return safePathSeg((params || {})[k]);
+  });
+  if (out.indexOf('..') >= 0) throw new Error('blocked path: ' + out);
+  return out;
+}
 
 var INSTRUCTION_TEXT = '把这个人物放到夕阳湖边，光线要暖。';
-
-/* 最终 URL 构建：仅接受以 / 开头的路径，并在白名单 API 源上重建。
-   不接受任何绝对地址（含 "//" 协议相对写法）。 */
-function apiUrl(path) {
-  var p = String(path || '');
-  if (p.charAt(0) !== '/') throw new Error('api path must start with /: ' + p);
-  var u = new URL(p, API_ORIGIN);
-  if (u.origin !== API_ORIGIN) throw new Error('blocked fetch target: ' + p);
-  return u.href;
-}
 
 /* 全站唯一 fetch 入口：
    1) 路径模板必须是 / 开头的字面量，动态段用 :name 占位符；
    2) 占位符只能由 opts.params 提供，且经 safePathSeg 白名单校验后替换；
-   3) 最终 URL 在白名单 API 源上重建，不接受任何绝对地址。
-   调用点因此不存在"变量拼 URL"，SSRF 类风险在此单点收口。 */
+   3) 结果恒为同源相对路径，调用点不存在"变量拼绝对 URL"。
+   SSRF 类风险在此单点收口。 */
 function callApi(pathTmpl, opts, ms) {
   opts = opts || {};
-  var params = opts.params || {};
-  var p = String(pathTmpl || '').replace(/:([A-Za-z_][A-Za-z0-9_]*)/g, function (_, k) {
-    return safePathSeg(params[k]);
-  });
-  var target = apiUrl(p);
+  var target = apiUrl(pathTmpl, opts.params);
   return Promise.race([
     fetch(target, opts),
     new Promise(function (_, reject) {
@@ -884,7 +876,7 @@ function currentFrame(truth) {
 }
 
 /* 画布合成：bg 与 fg（RGBA）按同尺寸铺放，输出 dataURL 并缓存。
-   跨域 artifact（?api= 指向独立后端时）需 anonymous + CORS，否则 toDataURL 污染抛错 */
+   artifact 经 dev_server 反代恒为同源；loadImg 对绝对地址仍带 anonymous + CORS 兜底 */
 var composeCache = {};
 function loadImg(src) {
   return new Promise(function (res, rej) {
@@ -1760,9 +1752,10 @@ function bindCreate() {
     if (!toJob) restoreScroll();
   });
 
-  /* ESC：面板关闭 / 退出回放 */
+  /* ESC：工作台 → 面板关闭 / 退出回放 */
   document.addEventListener('keydown', function (ev) {
     if (ev.key !== 'Escape') return;
+    if (wbOpenId) { closeWb(); return; }
     if (AppState === 'create' || AppState === 'run' || AppState === 'summary') closeStudio();
     else if (AppState === 'replay') setState(STORY && STORY.mode === 'job' ? 'summary' : 'intro');
   });
@@ -2132,6 +2125,803 @@ function bindRefine() {
   }
 }
 
+/* ═══════════════════ 7.7 · 悬浮球 + 一键工作台（滤镜 / 圈选抠图 / 背景加图） ═══════════════════
+   定位：所有既有能力仍然走 Agent 对话构建；悬浮球把高频操作做成一键按钮——
+   点球展开菜单，点按钮直接在本机画布完成图片操作（特效算法与后端 bsrc/fx 特效链同源），
+   也可以选择「让 Agent 接管」把当前图与圈选提示交给后端流水线（T01 box/point、T02、T07）。
+   工作台内用数字键 1-7 切换模式；ESC 关闭。
+   ═══════════════════ */
+var fab = $('#fab'), fabBall = $('#fabBall'), fabMenu = $('#fabMenu');
+var wbFileInput = $('#wbFileInput'), wbBgFileInput = $('#wbBgFileInput');
+var WB_EL = {
+  filter: $('#wbFilter'), cutout: $('#wbCutout'), bg: $('#wbBg')
+};
+var wbOpenId = '';
+var WB = { explicitFile: null, base: null, baseName: '', undo: null, cutout: null };
+
+function wbToast(msg) {
+  var t = $('#wbToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.className = 'wb-toast mono';
+    t.id = 'wbToast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add('is-on');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(function () { t.classList.remove('is-on'); }, 2600);
+}
+
+/* —— 共享图源：FAB 上传 > CREATE 面板上传 > 示例图 —— */
+function wbSourceFile() { return WB.explicitFile || StudioFile || null; }
+function wbLoadImgFromSrc(src) { return loadImg(src); }
+function wbEnsureBase() {
+  if (WB.base) return Promise.resolve(WB.base);
+  var f = wbSourceFile();
+  if (f) {
+    return wbLoadImgFromSrc(URL.createObjectURL(f)).then(function (img) {
+      WB.baseName = f.name || 'image';
+      return wbSetBase(img);
+    });
+  }
+  return wbLoadImgFromSrc('media/source_original.jpg').then(function (img) {
+    WB.baseName = 'portrait_0427.jpg（示例）';
+    return wbSetBase(img);
+  });
+}
+/* 内部分辨率封顶 1400px：特效像素运算保持流畅，导出足够清晰 */
+function wbSetBase(img) {
+  var scale = Math.min(1, 1400 / Math.max(img.naturalWidth, img.naturalHeight));
+  var w = Math.max(1, Math.round(img.naturalWidth * scale));
+  var h = Math.max(1, Math.round(img.naturalHeight * scale));
+  var cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  cv.getContext('2d').drawImage(img, 0, 0, w, h);
+  WB.base = cv;
+  WB.undo = null;
+  WB.cutout = null;
+  return Promise.resolve(cv);
+}
+function wbCopyCanvas(cv) {
+  var out = document.createElement('canvas');
+  out.width = cv.width; out.height = cv.height;
+  out.getContext('2d').drawImage(cv, 0, 0);
+  return out;
+}
+function wbCanvasBlob(cv) {
+  return new Promise(function (res, rej) {
+    cv.toBlob(function (b) { b ? res(b) : rej(new Error('toBlob')); }, 'image/png');
+  });
+}
+function wbDownload(cv, name) {
+  wbCanvasBlob(cv).then(function (b) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = name || 'imagecompose.png';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+    wbToast('已下载 ' + a.download);
+  }).catch(function () { wbToast('导出失败，请重试'); });
+}
+
+/* —— 工作台开合 —— */
+function openWb(id) {
+  if (!WB_EL[id]) return;
+  if (AppState === 'create' || AppState === 'run' || AppState === 'summary') closeStudio();
+  Object.keys(WB_EL).forEach(function (k) { WB_EL[k].classList.toggle('is-open', k === id); });
+  wbOpenId = id;
+  document.documentElement.classList.add('lock');
+  setFab(false);
+  if (id === 'filter') wbFilterActivate();
+  if (id === 'cutout') wbCutoutActivate();
+  if (id === 'bg') wbBgActivate();
+}
+function closeWb() {
+  if (!wbOpenId) return;
+  WB_EL[wbOpenId].classList.remove('is-open');
+  wbOpenId = '';
+  if (AppState === 'intro' || AppState === 'replay') {
+    document.documentElement.classList.remove('lock');
+  }
+}
+
+/* —— 模式按钮组（带按键提示，数字键直接切换） —— */
+function wbBuildModes(host, modes, onPick) {
+  host.textContent = '';
+  modes.forEach(function (m, i) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.mode = m.id;
+    var em = document.createElement('em');
+    em.textContent = m.key;
+    b.appendChild(em);
+    b.appendChild(document.createTextNode(m.name));
+    b.addEventListener('click', function () { onPick(m.id); });
+    host.appendChild(b);
+  });
+}
+function wbSyncModes(host, modeId) {
+  Array.prototype.forEach.call(host.children, function (b) {
+    b.classList.toggle('is-on', b.dataset.mode === modeId);
+  });
+}
+function wbModeByKey(host, modes, key, onPick) {
+  for (var i = 0; i < modes.length; i++) {
+    if (modes[i].key === key) { onPick(modes[i].id); return true; }
+  }
+  return false;
+}
+
+/* —— 特效实现：与 ai-service/bsrc/fx/fx_tool.py 六种特效同源（区域恒为全图） —— */
+function fxPixels(ctx, w, h, fn) {
+  var im = ctx.getImageData(0, 0, w, h);
+  fn(im.data, w, h);
+  ctx.putImageData(im, 0, 0);
+}
+function fxColorTemp(ctx, w, h, k, warm) {
+  fxPixels(ctx, w, h, function (d) {
+    for (var i = 0; i < d.length; i += 4) {
+      if (warm) { d[i] += 38 * k; d[i + 2] -= 22 * k; }
+      else { d[i + 2] += 38 * k; d[i] -= 22 * k; }
+    }
+  });
+}
+function fxVignette(ctx, w, h, k) {
+  var cx = w / 2, cy = h / 2, mr = Math.hypot(cx, cy);
+  fxPixels(ctx, w, h, function (d) {
+    for (var y = 0, i = 0; y < h; y++) {
+      for (var x = 0; x < w; x++, i += 4) {
+        var dd = Math.hypot(x - cx, y - cy) / mr;
+        var t = Math.max(0, dd - 0.55);
+        var vig = 1 - Math.pow(t, 1.8) * k * 1.9;
+        d[i] *= vig; d[i + 1] *= vig; d[i + 2] *= vig;
+      }
+    }
+  });
+}
+function fxSpotlight(ctx, w, h, k) {
+  var cx = w / 2, cy = h * 0.42, rx = w * 0.46, ry = h * 0.46;
+  fxPixels(ctx, w, h, function (d) {
+    for (var y = 0, i = 0; y < h; y++) {
+      for (var x = 0; x < w; x++, i += 4) {
+        var dd = Math.sqrt(Math.pow((x - cx) / rx, 2) + Math.pow((y - cy) / ry, 2));
+        var glow = Math.pow(Math.max(0, 1 - dd), 2.2) * k;
+        var layer = glow * 255;
+        d[i] = 255 - (255 - d[i]) * (255 - layer) / 255;
+        d[i + 1] = 255 - (255 - d[i + 1]) * (255 - layer) / 255;
+        d[i + 2] = 255 - (255 - d[i + 2]) * (255 - layer) / 255;
+      }
+    }
+  });
+}
+function fxFog(ctx, w, h, k) {
+  /* 分形噪声：小画布随机噪声 → 平滑放大（与 fx_tool 的噪声雾同思路） */
+  var nw = Math.max(2, w >> 4), nh = Math.max(2, h >> 4);
+  var noise = document.createElement('canvas');
+  noise.width = nw; noise.height = nh;
+  var nctx = noise.getContext('2d');
+  var nim = nctx.createImageData(nw, nh);
+  for (var i = 0; i < nim.data.length; i += 4) {
+    var v = Math.random() * 255;
+    nim.data[i] = nim.data[i + 1] = nim.data[i + 2] = v;
+    nim.data[i + 3] = 255;
+  }
+  nctx.putImageData(nim, 0, 0);
+  var scaled = document.createElement('canvas');
+  scaled.width = w; scaled.height = h;
+  var sctx = scaled.getContext('2d');
+  sctx.imageSmoothingEnabled = true;
+  sctx.drawImage(noise, 0, 0, w, h);
+  var nd = sctx.getImageData(0, 0, w, h).data;
+  var nmin = 255, nmax = 0;
+  for (var j = 0; j < nd.length; j += 4) {
+    var g = nd[j];
+    if (g < nmin) nmin = g;
+    if (g > nmax) nmax = g;
+  }
+  var span = Math.max(1, nmax - nmin);
+  var cx = w / 2, cy = h / 2, mr = Math.hypot(cx, cy);
+  fxPixels(ctx, w, h, function (d) {
+    for (var y = 0, i = 0, n = 0; y < h; y++) {
+      for (var x = 0; x < w; x++, i += 4, n += 4) {
+        var dd = Math.hypot(x - cx, y - cy) / mr;
+        var f = Math.max(0, 1.15 - dd) * ((nd[n] - nmin) / span) * k * 0.85;
+        d[i] = d[i] * (1 - f) + 235 * f;
+        d[i + 1] = d[i + 1] * (1 - f) + 240 * f;
+        d[i + 2] = d[i + 2] * (1 - f) + 255 * f;
+      }
+    }
+  });
+}
+function fxBokeh(ctx, w, h, k) {
+  /* 高光提取 + 柔边圆盘：先按亮度找 92 分位阈值，再在亮区撒光斑 */
+  var sample = [];
+  var im = ctx.getImageData(0, 0, w, h).data;
+  for (var i = 0; i < im.length; i += 4 * 37) {
+    sample.push((im[i] + im[i + 1] + im[i + 2]) / 3);
+  }
+  sample.sort(function (a, b) { return a - b; });
+  var thr = sample[Math.floor(sample.length * 0.92)] || 200;
+  var layer = document.createElement('canvas');
+  layer.width = w; layer.height = h;
+  var lctx = layer.getContext('2d');
+  for (var n = 0; n < 70; n++) {
+    var x = Math.random() * w, y = Math.random() * h;
+    var pi = ((y | 0) * w + (x | 0)) * 4;
+    var lum = (im[pi] + im[pi + 1] + im[pi + 2]) / 3;
+    if (lum < thr) continue;
+    var r = 6 + Math.random() * 22;
+    var a = (0.22 + Math.random() * 0.5) * k;
+    var grad = lctx.createRadialGradient(x, y, 0, x, y, r);
+    var tint = 0.9 + Math.random() * 0.2;
+    grad.addColorStop(0, 'rgba(' + Math.min(255, 255 * tint | 0) + ',' + (250 * tint | 0) + ',' + (235 * tint | 0) + ',' + a + ')');
+    grad.addColorStop(1, 'rgba(255,250,235,0)');
+    lctx.fillStyle = grad;
+    lctx.beginPath();
+    lctx.arc(x, y, r, 0, Math.PI * 2);
+    lctx.fill();
+  }
+  ctx.save();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'screen';
+  ctx.drawImage(layer, 0, 0);
+  ctx.restore();
+}
+function fxDepthBlur(ctx, w, h, k, base) {
+  /* 景深虚化：中心清晰（主体区）→ 四周渐虚化（全图模式的径向近似） */
+  var blur = document.createElement('canvas');
+  blur.width = w; blur.height = h;
+  var bctx = blur.getContext('2d');
+  bctx.filter = 'blur(' + Math.round(6 + 14 * k) + 'px)';
+  bctx.drawImage(base, 0, 0, w, h);
+  var bd = bctx.getImageData(0, 0, w, h).data;
+  var cx = w / 2, cy = h / 2;
+  var rx = w * 0.34, ry = h * 0.34;
+  fxPixels(ctx, w, h, function (d) {
+    for (var y = 0, i = 0; y < h; y++) {
+      for (var x = 0; x < w; x++, i += 4) {
+        var dd = Math.sqrt(Math.pow((x - cx) / rx, 2) + Math.pow((y - cy) / ry, 2));
+        var m = Math.min(1, Math.max(0, (dd - 0.7) / 0.6)) * Math.min(1, k * 1.3);
+        d[i] = d[i] * (1 - m) + bd[i] * m;
+        d[i + 1] = d[i + 1] * (1 - m) + bd[i + 1] * m;
+        d[i + 2] = d[i + 2] * (1 - m) + bd[i + 2] * m;
+      }
+    }
+  });
+}
+var FX_MODES = [
+  { key: '1', id: 'none', name: '原图', note: '查看未加滤镜的原图' },
+  { key: '2', id: 'warm', name: '暖色温', note: '色温偏暖（color_temp warm）' },
+  { key: '3', id: 'cool', name: '冷色温', note: '色温偏冷（color_temp cool）' },
+  { key: '4', id: 'vignette', name: '暗角', note: '四角压暗，视线集中' },
+  { key: '5', id: 'spotlight', name: '聚光', note: '舞台光斑，screen 混合' },
+  { key: '6', id: 'fog', name: '雾效', note: '体积雾，画面更有空气感' },
+  { key: '7', id: 'bokeh', name: '散景', note: '高光光斑叠加' },
+  { key: '8', id: 'depth', name: '景深虚化', note: '中心清晰、四周虚化（depth_blur）' }
+];
+
+var wbFilter = {
+  cv: $('#wbFilterCanvas'), stage: $('#wbFilterStage'), empty: $('#wbFilterEmpty'),
+  modesHost: $('#wbFilterModes'), range: $('#wbFilterRange'), val: $('#wbFilterVal'),
+  apply: $('#wbFilterApply'), undo: $('#wbFilterUndo'), dl: $('#wbFilterDownload'),
+  agent: $('#wbFilterAgent'), note: $('#wbFilterNote'),
+  mode: 'none', raf: 0
+};
+function wbFilterSchedule() {
+  if (wbFilter.raf) return;
+  wbFilter.raf = requestAnimationFrame(function () { wbFilter.raf = 0; wbFilterRender(); });
+}
+function wbFilterRender() {
+  if (!WB.base || !wbFilter.cv) return;
+  var base = WB.base, w = base.width, h = base.height;
+  if (wbFilter.cv.width !== w) { wbFilter.cv.width = w; wbFilter.cv.height = h; }
+  var ctx = wbFilter.cv.getContext('2d');
+  ctx.filter = 'none';
+  ctx.clearRect(0, 0, w, h);
+  ctx.drawImage(base, 0, 0);
+  wbFilter.empty.hidden = true;
+  if (wbFilter.mode === 'none') return;
+  var k = (parseInt(wbFilter.range.value, 10) || 60) / 100;
+  if (wbFilter.mode === 'warm') fxColorTemp(ctx, w, h, k, true);
+  else if (wbFilter.mode === 'cool') fxColorTemp(ctx, w, h, k, false);
+  else if (wbFilter.mode === 'vignette') fxVignette(ctx, w, h, k);
+  else if (wbFilter.mode === 'spotlight') fxSpotlight(ctx, w, h, k);
+  else if (wbFilter.mode === 'fog') fxFog(ctx, w, h, k);
+  else if (wbFilter.mode === 'bokeh') fxBokeh(ctx, w, h, k);
+  else if (wbFilter.mode === 'depth') fxDepthBlur(ctx, w, h, k, base);
+}
+function wbFilterSetMode(id) {
+  wbFilter.mode = id;
+  wbSyncModes(wbFilter.modesHost, id);
+  for (var i = 0; i < FX_MODES.length; i++) {
+    if (FX_MODES[i].id === id) {
+      wbFilter.note.textContent = '按键 ' + FX_MODES[i].key + ' · ' + FX_MODES[i].note;
+      break;
+    }
+  }
+  wbFilterSchedule();
+}
+function wbFilterActivate() {
+  wbEnsureBase().then(function () {
+    wbFilterRender();
+    wbFilter.note.textContent = '当前图片：' + WB.baseName + '。选模式 → 调强度 → 应用滤镜，可连续叠加成特效链。';
+  }).catch(function () { wbToast('图片载入失败'); });
+}
+function bindWbFilter() {
+  wbBuildModes(wbFilter.modesHost, FX_MODES, wbFilterSetMode);
+  wbFilterSetMode('none');
+  wbFilter.range.addEventListener('input', function () {
+    wbFilter.val.textContent = wbFilter.range.value + '%';
+    wbFilterSchedule();
+  });
+  wbFilter.apply.addEventListener('click', function () {
+    if (!WB.base) { wbToast('先载入一张图片'); return; }
+    WB.undo = wbCopyCanvas(WB.base);
+    WB.base = wbCopyCanvas(wbFilter.cv);
+    wbToast('滤镜已应用，可继续叠加');
+    wbFilter.note.textContent = '已应用 ' + wbFilter.mode + '，特效可串联（同 FxTool.chain）。';
+  });
+  wbFilter.undo.addEventListener('click', function () {
+    if (!WB.undo) { wbToast('还没有可还原的一步'); return; }
+    WB.base = WB.undo; WB.undo = null;
+    wbFilterSetMode('none');   /* 还原后回到原图预览，效果真正可见地消失 */
+    wbToast('已还原上一步');
+  });
+  wbFilter.dl.addEventListener('click', function () {
+    if (!WB.base) { wbToast('先载入一张图片'); return; }
+    wbDownload(wbFilter.cv, 'imagecompose_filter.png');
+  });
+  wbFilter.agent.addEventListener('click', function () {
+    if (!WB.base) { wbToast('先载入一张图片'); return; }
+    wbCanvasBlob(wbFilter.cv).then(function (b) {
+      return wbAgentRun(b, '细节增强，画面更清晰，精修质感', null, '滤镜图已交给 Agent');
+    });
+  });
+}
+
+/* —— 圈选抠图工作台：套索（多边形）/ 矩形 两种模式 + 羽化，输出透明 PNG —— */
+var CUT_MODES = [
+  { key: '1', id: 'lasso', name: '套索', note: '按住鼠标圈出主体，松开自动闭合' },
+  { key: '2', id: 'box', name: '矩形', note: '拖一个框圈住主体' }
+];
+var wbCutout = {
+  cv: $('#wbCutoutCanvas'), stage: $('#wbCutoutStage'), empty: $('#wbCutoutEmpty'),
+  modesHost: $('#wbCutoutModes'), range: $('#wbCutoutRange'), val: $('#wbCutoutVal'),
+  apply: $('#wbCutoutApply'), redraw: $('#wbCutoutRedraw'), dl: $('#wbCutoutDownload'),
+  toBg: $('#wbCutoutToBg'), agent: $('#wbCutoutAgent'), note: $('#wbCutoutNote'),
+  mode: 'lasso', pts: [], box: null, drawing: false, view: 'pick', lastBox: null
+};
+function wbCutoutClearSel() { wbCutout.pts = []; wbCutout.box = null; wbCutout.lastBox = null; }
+function wbCutoutSchedule() {
+  if (wbCutout.raf) return;
+  wbCutout.raf = requestAnimationFrame(function () { wbCutout.raf = 0; wbCutoutRender(); });
+}
+function wbCutoutRender() {
+  if (!WB.base || !wbCutout.cv) return;
+  var base = WB.base, w = base.width, h = base.height;
+  if (wbCutout.cv.width !== w) { wbCutout.cv.width = w; wbCutout.cv.height = h; }
+  var ctx = wbCutout.cv.getContext('2d');
+  ctx.filter = 'none';
+  ctx.clearRect(0, 0, w, h);
+  wbCutout.empty.hidden = true;
+  if (wbCutout.view === 'result' && WB.cutout) {
+    ctx.drawImage(WB.cutout, 0, 0);
+    return;
+  }
+  ctx.drawImage(base, 0, 0);
+  /* 选区覆盖层：半透明提亮 + 描边 */
+  ctx.save();
+  ctx.beginPath();
+  if (wbCutout.mode === 'lasso' && wbCutout.pts.length > 1) {
+    ctx.moveTo(wbCutout.pts[0][0], wbCutout.pts[0][1]);
+    for (var i = 1; i < wbCutout.pts.length; i++) ctx.lineTo(wbCutout.pts[i][0], wbCutout.pts[i][1]);
+    if (!wbCutout.drawing) ctx.closePath();
+  } else if (wbCutout.mode === 'box' && wbCutout.box) {
+    var b = wbCutout.box;
+    ctx.rect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
+  }
+  var has = wbCutout.pts.length > 1 || wbCutout.box;
+  if (has) {
+    ctx.fillStyle = 'rgba(126,167,180,.18)';
+    ctx.fill();
+    ctx.setLineDash([7, 6]);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#3E6E7C';
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function wbCutoutPt(ev) {
+  var r = wbCutout.cv.getBoundingClientRect();
+  var cv = wbCutout.cv;
+  return [Math.round((ev.clientX - r.left) * cv.width / r.width),
+          Math.round((ev.clientY - r.top) * cv.height / r.height)];
+}
+function wbCutoutSetMode(id) {
+  wbCutout.mode = id;
+  wbCutoutClearSel();
+  wbCutout.view = 'pick';
+  wbSyncModes(wbCutout.modesHost, id);
+  for (var i = 0; i < CUT_MODES.length; i++) {
+    if (CUT_MODES[i].id === id) { wbCutout.note.textContent = CUT_MODES[i].note; break; }
+  }
+  wbCutoutSchedule();
+}
+function wbCutoutActivate() {
+  wbEnsureBase().then(function () {
+    wbCutout.view = 'pick';
+    wbCutoutSchedule();
+    wbCutout.note.textContent = '当前图片：' + WB.baseName + '。' + wbCutout.note.textContent;
+  }).catch(function () { wbToast('图片载入失败'); });
+}
+/* 选区 → 羽化 mask → destination-in 抠出（同 T01 输出 rgba_png 语义） */
+function wbCutoutDoCut() {
+  if (!WB.base) { wbToast('先载入一张图片'); return; }
+  var has = (wbCutout.mode === 'lasso' && wbCutout.pts.length > 2) ||
+            (wbCutout.mode === 'box' && wbCutout.box);
+  if (!has) { wbToast('先在图上圈出主体'); return; }
+  var w = WB.base.width, h = WB.base.height;
+  var feather = parseInt(wbCutout.range.value, 10) || 0;
+  /* mask 只用 alpha：选区内不透明白，选区外全透明（destination-in 语义） */
+  var mask = document.createElement('canvas');
+  mask.width = w; mask.height = h;
+  var mctx = mask.getContext('2d');
+  mctx.filter = 'none';
+  mctx.fillStyle = '#fff';
+  mctx.beginPath();
+  if (wbCutout.mode === 'lasso') {
+    mctx.moveTo(wbCutout.pts[0][0], wbCutout.pts[0][1]);
+    for (var i = 1; i < wbCutout.pts.length; i++) mctx.lineTo(wbCutout.pts[i][0], wbCutout.pts[i][1]);
+    mctx.closePath();
+  } else {
+    var b = wbCutout.box;
+    mctx.rect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
+  }
+  mctx.fill();
+  if (feather > 0) {
+    var soft = document.createElement('canvas');
+    soft.width = w; soft.height = h;
+    var sctx = soft.getContext('2d');
+    sctx.filter = 'blur(' + feather + 'px)';
+    sctx.drawImage(mask, 0, 0);
+    mask = soft;
+  }
+  var out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  var octx = out.getContext('2d');
+  octx.drawImage(WB.base, 0, 0);
+  octx.globalCompositeOperation = 'destination-in';
+  octx.drawImage(mask, 0, 0);
+  WB.cutout = out;
+  /* 记录选区外接框（原图像素坐标），「让 AI 精抠」作为 SAM2 box 提示 */
+  var xs = [], ys = [];
+  if (wbCutout.mode === 'lasso') {
+    wbCutout.pts.forEach(function (p) { xs.push(p[0]); ys.push(p[1]); });
+  } else { xs = [wbCutout.box[0], wbCutout.box[2]]; ys = [wbCutout.box[1], wbCutout.box[3]]; }
+  wbCutout.lastBox = [Math.min.apply(null, xs), Math.min.apply(null, ys),
+                      Math.max.apply(null, xs), Math.max.apply(null, ys)];
+  wbCutout.view = 'result';
+  wbCutoutSchedule();
+  wbToast('抠图完成，主体已透明化');
+  wbCutout.note.textContent = '已完成抠图。可下载透明 PNG、送去背景合成，或「让 AI 精抠」交给后端 SAM2 沿发丝细化。';
+}
+function wbCutoutActivateDraw(on) {
+  wbCutout.stage.classList.toggle('wb-stage--draw', !!on);
+}
+function bindWbCutout() {
+  wbBuildModes(wbCutout.modesHost, CUT_MODES, wbCutoutSetMode);
+  wbCutoutSetMode('lasso');
+  wbCutout.range.addEventListener('input', function () {
+    wbCutout.val.textContent = wbCutout.range.value + 'px';
+  });
+  var cv = wbCutout.cv;
+  cv.addEventListener('pointerdown', function (ev) {
+    if (!WB.base || wbCutout.view === 'result') return;
+    wbCutout.drawing = true;
+    wbCutoutClearSel();
+    wbCutoutActivateDraw(true);
+    cv.setPointerCapture && cv.setPointerCapture(ev.pointerId);
+    var p = wbCutoutPt(ev);
+    if (wbCutout.mode === 'lasso') wbCutout.pts.push(p);
+    else wbCutout.box = [p[0], p[1], p[0], p[1]];
+    ev.preventDefault();
+  });
+  cv.addEventListener('pointermove', function (ev) {
+    if (!wbCutout.drawing) return;
+    var p = wbCutoutPt(ev);
+    if (wbCutout.mode === 'lasso') {
+      var last = wbCutout.pts[wbCutout.pts.length - 1];
+      if (!last || Math.hypot(p[0] - last[0], p[1] - last[1]) > 3) wbCutout.pts.push(p);
+    } else {
+      wbCutout.box[2] = p[0]; wbCutout.box[3] = p[1];
+    }
+    wbCutoutSchedule();
+  });
+  function finish() {
+    if (!wbCutout.drawing) return;
+    wbCutout.drawing = false;
+    wbCutoutActivateDraw(false);
+    wbCutoutSchedule();
+  }
+  cv.addEventListener('pointerup', finish);
+  cv.addEventListener('pointercancel', finish);
+  wbCutout.apply.addEventListener('click', wbCutoutDoCut);
+  wbCutout.redraw.addEventListener('click', function () {
+    wbCutoutClearSel();
+    wbCutout.view = 'pick';
+    wbCutoutSchedule();
+    wbToast('已回到圈选');
+  });
+  wbCutout.dl.addEventListener('click', function () {
+    if (!WB.cutout) { wbToast('先圈选并抠图'); return; }
+    wbDownload(WB.cutout, 'imagecompose_cutout.png');
+  });
+  wbCutout.toBg.addEventListener('click', function () {
+    if (!WB.cutout) { wbToast('先圈选并抠图'); return; }
+    openWb('bg');
+  });
+  wbCutout.agent.addEventListener('click', function () {
+    if (!WB.base) { wbToast('先载入一张图片'); return; }
+    wbSourceBlob(function (blob) {
+      var spatial = wbCutout.lastBox ? { box: wbCutout.lastBox } : null;
+      wbAgentRun(blob, '抠图，只保留圈选出的主体，发丝边缘要精细', spatial, '圈选提示已交给 Agent（SAM2 box 引导）');
+    });
+  });
+}
+/* 「让 AI 精抠」上传原图（而不是抠图结果） */
+function wbSourceBlob(cb) {
+  var f = wbSourceFile();
+  if (f) { cb(f); return; }
+  fetch('media/source_original.jpg').then(function (r) { return r.blob(); }).then(cb);
+}
+
+/* —— 背景加图工作台：内置场景 / 纯色 / 上传 三种来源 + 主体缩放 —— */
+var BG_MODES = [
+  { key: '1', id: 'scene', name: '内置场景', note: '项目内置的湖边实拍场景' },
+  { key: '2', id: 'color', name: '纯色', note: '干净底色，适合证件照/商品图' },
+  { key: '3', id: 'upload', name: '上传背景', note: '用你自己的图片作背景' }
+];
+var wbBg = {
+  cv: $('#wbBgCanvas'), stage: $('#wbBgStage'), empty: $('#wbBgEmpty'),
+  modesHost: $('#wbBgModes'), scenes: $('#wbBgScenes'), swatches: $('#wbBgSwatches'),
+  range: $('#wbBgRange'), val: $('#wbBgVal'),
+  apply: $('#wbBgApply'), dl: $('#wbBgDownload'), agent: $('#wbBgAgent'), note: $('#wbBgNote'),
+  mode: 'scene', scene: 'media/scene_lakeside.jpg', sceneImg: null, color: '#7EA7B4', bgImg: null, raf: 0
+};
+function wbBgSchedule() {
+  if (wbBg.raf) return;
+  wbBg.raf = requestAnimationFrame(function () { wbBg.raf = 0; wbBgRender(); });
+}
+function wbBgFgSource() {
+  return WB.cutout ? Promise.resolve(WB.cutout) : wbEnsureBase();
+}
+function wbBgSceneImg() {
+  if (wbBg.sceneImg && wbBg.sceneImg.dataset.src === wbBg.scene) return Promise.resolve(wbBg.sceneImg);
+  return wbLoadImgFromSrc(wbBg.scene).then(function (img) {
+    img.dataset.src = wbBg.scene;
+    wbBg.sceneImg = img;
+    return img;
+  });
+}
+function wbBgRender() {
+  var prep = wbBg.mode === 'upload'
+    ? (wbBg.bgImg ? Promise.resolve(wbBg.bgImg) : Promise.resolve(null))
+    : wbBgSceneImg().catch(function () { return null; });
+  prep.then(function (bgEl) { return wbBgFgSource().then(function (fg) { return [fg, bgEl]; }); })
+    .then(function (pair) {
+      var fg = pair[0], bgEl = pair[1];
+      if (!fg) return;
+      var w = fg.width, h = fg.height;
+      if (wbBg.cv.width !== w) { wbBg.cv.width = w; wbBg.cv.height = h; }
+      var ctx = wbBg.cv.getContext('2d');
+      ctx.filter = 'none';
+      /* 背景铺满（cover） */
+      ctx.clearRect(0, 0, w, h);
+      if (wbBg.mode === 'color') {
+        ctx.fillStyle = wbBg.color;
+        ctx.fillRect(0, 0, w, h);
+      } else if (bgEl) {
+        var iw = bgEl.naturalWidth || bgEl.width, ih = bgEl.naturalHeight || bgEl.height;
+        var s = Math.max(w / iw, h / ih);
+        var dw = iw * s, dh = ih * s;
+        ctx.drawImage(bgEl, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      } else {
+        ctx.fillStyle = '#7EA7B4';
+        ctx.fillRect(0, 0, w, h);
+      }
+      /* 前景：抠图主体直接居中缩放；整图（未抠）按圆角卡片贴入 */
+      var scale = (parseInt(wbBg.range.value, 10) || 100) / 100;
+      var isCut = !!WB.cutout;
+      if (!isCut) scale *= 0.62;
+      var fh = h * scale, fw = w * scale;
+      ctx.save();
+      if (!isCut) {
+        var r = Math.round(Math.min(fw, fh) * 0.055) + 8;
+        var fx0 = (w - fw) / 2, fy0 = (h - fh) / 2;
+        ctx.beginPath();
+        ctx.moveTo(fx0 + r, fy0);
+        ctx.arcTo(fx0 + fw, fy0, fx0 + fw, fy0 + fh, r);
+        ctx.arcTo(fx0 + fw, fy0 + fh, fx0, fy0 + fh, r);
+        ctx.arcTo(fx0, fy0 + fh, fx0, fy0, r);
+        ctx.arcTo(fx0, fy0, fx0 + fw, fy0, r);
+        ctx.closePath();
+        ctx.clip();
+      }
+      ctx.drawImage(fg, (w - fw) / 2, (h - fh) / 2, fw, fh);
+      ctx.restore();
+      wbBg.empty.hidden = true;
+    });
+}
+function wbBgSetMode(id) {
+  wbBg.mode = id;
+  wbSyncModes(wbBg.modesHost, id);
+  wbBg.scenes.hidden = id !== 'scene';
+  wbBg.swatches.hidden = id !== 'color';
+  for (var i = 0; i < BG_MODES.length; i++) {
+    if (BG_MODES[i].id === id) { wbBg.note.textContent = BG_MODES[i].note; break; }
+  }
+  wbBgSchedule();
+}
+function wbBgActivate() {
+  wbEnsureBase().then(function () {
+    wbBgRender();
+    wbBg.note.textContent = (WB.cutout ? '已使用圈选抠图的主体。' : ('当前图片：' + WB.baseName + '（整图换底）。')) +
+      ' 选背景来源 → 调主体大小 → 合成背景。';
+  }).catch(function () { wbToast('图片载入失败'); });
+}
+function bindWbBg() {
+  wbBuildModes(wbBg.modesHost, BG_MODES, wbBgSetMode);
+  wbBgSetMode('scene');
+  Array.prototype.forEach.call(wbBg.scenes.children, function (b) {
+    b.addEventListener('click', function () {
+      wbBg.scene = b.dataset.scene;
+      Array.prototype.forEach.call(wbBg.scenes.children, function (x) { x.classList.toggle('is-on', x === b); });
+      wbBgSchedule();
+    });
+  });
+  wbBg.scenes.children[0] && wbBg.scenes.children[0].classList.add('is-on');
+  Array.prototype.forEach.call(wbBg.swatches.children, function (b) {
+    b.addEventListener('click', function () {
+      wbBg.color = b.dataset.color;
+      Array.prototype.forEach.call(wbBg.swatches.children, function (x) { x.classList.toggle('is-on', x === b); });
+      wbBgSchedule();
+    });
+  });
+  wbBg.swatches.children[0] && wbBg.swatches.children[0].classList.add('is-on');
+  wbBg.range.addEventListener('input', function () {
+    wbBg.val.textContent = wbBg.range.value + '%';
+    wbBgSchedule();
+  });
+  wbBg.apply.addEventListener('click', function () { wbToast('背景已合成，可下载或继续编辑'); });
+  wbBg.dl.addEventListener('click', function () {
+    if (!wbBg.cv.width) { wbToast('先载入一张图片'); return; }
+    wbDownload(wbBg.cv, 'imagecompose_scene.png');
+  });
+  wbBg.agent.addEventListener('click', function () {
+    wbSourceBlob(function (blob) {
+      wbAgentRun(blob, '背景换成夕阳湖边，光线要暖', null, '已交给 Agent：抠取 → 生成场景 → 重打光 → 阴影 → 成片');
+    });
+  });
+  wbBgFileInput.addEventListener('change', function () {
+    var f = wbBgFileInput.files && wbBgFileInput.files[0];
+    if (!f || !/image\/(jpeg|png|webp)/.test(f.type)) return;
+    var url = URL.createObjectURL(f);
+    wbLoadImgFromSrc(url).then(function (img) {
+      wbBg.bgImg = img;
+      wbBgSetMode('upload');
+      wbToast('背景已更新');
+    }).catch(function () { wbToast('背景图载入失败'); });
+  });
+}
+
+/* —— Agent 桥接：工作台一键把图 + 圈选提示交给后端流水线（复用 RUN 面板与轮询） —— */
+async function wbAgentRun(blob, text, spatial, okNote) {
+  /* 后端忙时（正在跑上一条流水线）事件循环可能短暂无响应：重试探测，避免误判离线 */
+  var alive = false;
+  for (var i = 0; i < 3 && !alive; i++) {
+    alive = await backendAlive();
+    if (!alive && i < 2) await new Promise(function (res) { setTimeout(res, 1500); });
+  }
+  if (!alive) {
+    wbToast('Agent 暂时无响应（可能正在执行任务），请稍后再试');
+    return;
+  }
+  try {
+    wbToast('正在把图片交给 Agent…');
+    var s = await (await callApi('/api/v1/sessions', { method: 'POST' }, 4000)).json();
+    var fd = new FormData();
+    fd.append('file', blob, 'workbench.png');
+    await (await callApi('/api/v1/sessions/:sessionId/uploads', {
+      params: { sessionId: s.session_id }, method: 'POST', body: fd
+    }, 30000)).json();
+    var body = { text: text, quality: 'draft' };
+    if (spatial) body.spatial = spatial;
+    /* LLM 规划最长 20s（llm_timeout_s），客户端超时须大于它，否则误报失败 */
+    var r = await (await callApi('/api/v1/sessions/:sessionId/instructions', {
+      params: { sessionId: s.session_id }, method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    }, 30000)).json();
+    activeSessionId = s.session_id;
+    if (!Job) {
+      /* attachRun 会继承 prev.frames，种子必须带 frames，否则 refreshRealFrames 抛错被轮询 catch 吞掉 */
+      Job = { uploadUrl: URL.createObjectURL(blob), filename: 'workbench.png', frames: {} };
+    }
+    closeWb();
+    attachRun(s.session_id, r.run_id, text);
+    if (okNote) wbToast(okNote);
+  } catch (e) {
+    wbToast('Agent 调用失败，请确认后端已启动（python scripts/run_agent.py）');
+  }
+}
+
+/* —— 悬浮球：一键直达所有能力 —— */
+function setFab(open) {
+  fab.classList.toggle('is-open', !!open);
+  fabBall.setAttribute('aria-expanded', open ? 'true' : 'false');
+  fabMenu.setAttribute('aria-hidden', open ? 'false' : 'true');
+}
+function fabAction(act) {
+  setFab(false);
+  if (act === 'create') { openCreate(); return; }
+  if (act === 'upload') { wbFileInput.click(); return; }
+  if (act === 'filter') { openWb('filter'); return; }
+  if (act === 'cutout') { openWb('cutout'); return; }
+  if (act === 'bg') { openWb('bg'); return; }
+  if (act === 'replay') {
+    if (STORY && STORY.mode === 'job') enterReplay();
+    else goToCh(2, true);
+    return;
+  }
+  if (act === 'download') {
+    if (wbOpenId === 'filter' && WB.base) { wbDownload(wbFilter.cv, 'imagecompose_filter.png'); return; }
+    if (wbOpenId === 'cutout' && WB.cutout) { wbDownload(WB.cutout, 'imagecompose_cutout.png'); return; }
+    if (wbOpenId === 'bg' && wbBg.cv.width) { wbDownload(wbBg.cv, 'imagecompose_scene.png'); return; }
+    var fin = (Job && Job.frames && Job.frames.final) || (sumFinal && sumFinal.getAttribute('src')) || '';
+    if (fin) {
+      var a = document.createElement('a');
+      a.href = fin; a.download = 'imagecompose_final.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      wbToast('已保存当前成片');
+    } else {
+      wbToast('还没有可下载的成片——先一键生成，或在工作室里处理一张图');
+    }
+  }
+}
+function bindFab() {
+  fabBall.addEventListener('click', function () { setFab(!fab.classList.contains('is-open')); });
+  Array.prototype.forEach.call(fabMenu.children, function (b) {
+    b.addEventListener('click', function () { fabAction(b.dataset.fab); });
+  });
+  wbFileInput.addEventListener('change', function () {
+    var f = wbFileInput.files && wbFileInput.files[0];
+    if (!f || !/image\/(jpeg|png|webp)/.test(f.type)) return;
+    WB.explicitFile = f;
+    WB.base = null; WB.undo = null; WB.cutout = null;
+    openWb('filter');
+  });
+}
+function bindWorkbenches() {
+  bindWbFilter();
+  bindWbCutout();
+  bindWbBg();
+  Array.prototype.forEach.call(document.querySelectorAll('[data-wb-close]'), function (b) {
+    b.addEventListener('click', closeWb);
+  });
+  /* 数字键切模式 / ESC 关闭（ESC 主体逻辑在 bindCreate 的监听里） */
+  document.addEventListener('keydown', function (ev) {
+    if (!wbOpenId) return;
+    var tag = ev.target && ev.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (ev.key >= '1' && ev.key <= '8') {
+      if (wbOpenId === 'filter') wbModeByKey(wbFilter.modesHost, FX_MODES, ev.key, wbFilterSetMode);
+      else if (wbOpenId === 'cutout') wbModeByKey(wbCutout.modesHost, CUT_MODES, ev.key, wbCutoutSetMode);
+      else if (wbOpenId === 'bg') wbModeByKey(wbBg.modesHost, BG_MODES, ev.key, wbBgSetMode);
+    }
+  });
+}
+
 /* ═══════════════════ 8 · 启动 ═══════════════════ */
 
 function applyDeepLink() {
@@ -2164,6 +2954,8 @@ function init() {
   bindCreate();
   bindVoice();
   bindRefine();
+  bindFab();
+  bindWorkbenches();
   var handled = applyDeepLink();
   if (!handled && window.scrollY > 2) {
     /* 刷新落在页中：直接就位，不做全程滑行 */

@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ImageCompose — From image to reality.</title>
 <meta name="description" content="抠取与光影一致性融合 Agent：从一张普通照片，到一张有光的成片。">
-<!-- Agent API 基址：留空 = 同源（推荐，配合 tools/dev_server.py 反代）；仅允许 http/https 绝对地址 -->
-<meta name="imc-api-base" content="">
+<!-- API 基址恒同源（tools/dev_server.py 反代 /api /healthz /artifacts /speech），不接受运行时覆盖 -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%237EA7B4'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -569,6 +568,129 @@
 </footer>
 
 <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" hidden>
+<input type="file" id="wbFileInput" accept="image/jpeg,image/png,image/webp" hidden>
+<input type="file" id="wbBgFileInput" accept="image/jpeg,image/png,image/webp" hidden>
+
+<!-- ======================== 悬浮球（一键操作入口：Agent 流程 + 三个本地工作台） ======================== -->
+<div class="fab" id="fab">
+  <div class="fab-menu mono" id="fabMenu" aria-hidden="true">
+    <button data-fab="create" type="button"><i>AGENT</i>一键生成</button>
+    <button data-fab="upload" type="button"><i>IMAGE</i>上传图片</button>
+    <button data-fab="filter" type="button"><i>FX</i>滤镜</button>
+    <button data-fab="cutout" type="button"><i>LASSO</i>圈选抠图</button>
+    <button data-fab="bg" type="button"><i>SCENE</i>背景加图</button>
+    <button data-fab="replay" type="button"><i>REPLAY</i>回看过程</button>
+    <button data-fab="download" type="button"><i>EXPORT</i>下载成片</button>
+  </div>
+  <button class="fab-ball" id="fabBall" type="button" aria-label="快捷操作悬浮球" aria-expanded="false">
+    <span class="fab-dot"></span>
+    <span class="fab-ring"></span>
+  </button>
+</div>
+
+<!-- ======================== 工作台 1 · 滤镜（按键 1-7 切模式，本地画布一键生效，也可交 Agent） ======================== -->
+<div class="studio wb" id="wbFilter" hidden>
+  <div class="studio-inner wb-inner">
+    <header class="studio-head">
+      <span class="mono">FILTER&nbsp; <i>·</i>&nbsp; 滤镜工作台&nbsp; <i>·</i>&nbsp; 按键 1-8 切换模式</span>
+      <button class="studio-close mono" data-wb-close type="button">ESC&nbsp; 关闭</button>
+    </header>
+    <div class="wb-grid">
+      <div class="wb-canvas-col">
+        <div class="wb-stage wb-stage--checker" id="wbFilterStage">
+          <canvas id="wbFilterCanvas"></canvas>
+          <p class="mono wb-empty" id="wbFilterEmpty">先载入一张图片&nbsp; <i>·</i>&nbsp; 点击右侧「换一张图」或直接用示例</p>
+        </div>
+      </div>
+      <aside class="wb-side">
+        <p class="mono wb-label">EFFECT&nbsp; <i>·</i>&nbsp; 特效模式（与 T-FX 特效链同源）</p>
+        <div class="wb-modes" id="wbFilterModes"></div>
+        <p class="mono wb-label">INTENSITY&nbsp; <i>·</i>&nbsp; 强度&nbsp; <b id="wbFilterVal">60%</b></p>
+        <input type="range" id="wbFilterRange" min="5" max="100" value="60">
+        <div class="wb-actions">
+          <button class="turn-go is-on" id="wbFilterApply" type="button">应用滤镜</button>
+          <button class="wb-btn mono" id="wbFilterUndo" type="button">还原</button>
+          <button class="wb-btn mono" id="wbFilterDownload" type="button">下载 PNG</button>
+          <button class="wb-btn mono" id="wbFilterAgent" type="button">让 Agent 接管</button>
+        </div>
+        <p class="mono wb-note" id="wbFilterNote">一键本地生效；「让 Agent 接管」把当前图交给后端流水线继续处理。</p>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== 工作台 2 · 圈选抠图（套索/矩形两种模式，羽化输出透明 PNG） ======================== -->
+<div class="studio wb" id="wbCutout" hidden>
+  <div class="studio-inner wb-inner">
+    <header class="studio-head">
+      <span class="mono">LASSO&nbsp; <i>·</i>&nbsp; 圈选抠图工作台&nbsp; <i>·</i>&nbsp; 按键 1/2 切换模式</span>
+      <button class="studio-close mono" data-wb-close type="button">ESC&nbsp; 关闭</button>
+    </header>
+    <div class="wb-grid">
+      <div class="wb-canvas-col">
+        <div class="wb-stage wb-stage--checker" id="wbCutoutStage">
+          <canvas id="wbCutoutCanvas"></canvas>
+          <p class="mono wb-empty" id="wbCutoutEmpty">先载入一张图片&nbsp; <i>·</i>&nbsp; 点击右侧「换一张图」或直接用示例</p>
+        </div>
+      </div>
+      <aside class="wb-side">
+        <p class="mono wb-label">MODE&nbsp; <i>·</i>&nbsp; 圈选模式</p>
+        <div class="wb-modes" id="wbCutoutModes"></div>
+        <p class="mono wb-label">FEATHER&nbsp; <i>·</i>&nbsp; 边缘羽化&nbsp; <b id="wbCutoutVal">12px</b></p>
+        <input type="range" id="wbCutoutRange" min="0" max="40" value="12">
+        <div class="wb-actions">
+          <button class="turn-go is-on" id="wbCutoutApply" type="button">圈选抠图</button>
+          <button class="wb-btn mono" id="wbCutoutRedraw" type="button">重画</button>
+          <button class="wb-btn mono" id="wbCutoutDownload" type="button">下载透明 PNG</button>
+          <button class="wb-btn mono" id="wbCutoutToBg" type="button">送去背景合成</button>
+          <button class="wb-btn mono" id="wbCutoutAgent" type="button">让 AI 精抠</button>
+        </div>
+        <p class="mono wb-note" id="wbCutoutNote">套索/矩形圈住主体 → 抠图；「让 AI 精抠」把圈选范围作为提示交给后端 SAM2。</p>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== 工作台 3 · 背景加图（内置场景/纯色/上传三种模式，主体贴回新背景） ======================== -->
+<div class="studio wb" id="wbBg" hidden>
+  <div class="studio-inner wb-inner">
+    <header class="studio-head">
+      <span class="mono">SCENE&nbsp; <i>·</i>&nbsp; 背景加图工作台&nbsp; <i>·</i>&nbsp; 按键 1/2/3 切换来源</span>
+      <button class="studio-close mono" data-wb-close type="button">ESC&nbsp; 关闭</button>
+    </header>
+    <div class="wb-grid">
+      <div class="wb-canvas-col">
+        <div class="wb-stage wb-stage--checker" id="wbBgStage">
+          <canvas id="wbBgCanvas"></canvas>
+          <p class="mono wb-empty" id="wbBgEmpty">先在「圈选抠图」里抠出主体，或右侧「换一张图」直接整图换底</p>
+        </div>
+      </div>
+      <aside class="wb-side">
+        <p class="mono wb-label">SOURCE&nbsp; <i>·</i>&nbsp; 背景来源</p>
+        <div class="wb-modes" id="wbBgModes"></div>
+        <div class="wb-thumbs" id="wbBgScenes" hidden>
+          <button type="button" data-scene="media/scene_lakeside.jpg"><img src="media/scene_lakeside.jpg" alt=""></button>
+          <button type="button" data-scene="media/Empty_lakeside_scene_at_golden_2026-09-11T13-36-21.png"><img src="media/Empty_lakeside_scene_at_golden_2026-09-11T13-36-21.png" alt=""></button>
+        </div>
+        <div class="wb-swatches" id="wbBgSwatches" hidden>
+          <button type="button" data-color="#7EA7B4" style="background:#7EA7B4" aria-label="雾蓝"></button>
+          <button type="button" data-color="#E5B36B" style="background:#E5B36B" aria-label="暮橙"></button>
+          <button type="button" data-color="#3E5C50" style="background:#3E5C50" aria-label="墨绿"></button>
+          <button type="button" data-color="#F2F1ED" style="background:#F2F1ED" aria-label="暖白"></button>
+        </div>
+        <p class="mono wb-label">SCALE&nbsp; <i>·</i>&nbsp; 主体大小&nbsp; <b id="wbBgVal">100%</b></p>
+        <input type="range" id="wbBgRange" min="40" max="180" value="100">
+        <div class="wb-actions">
+          <button class="turn-go is-on" id="wbBgApply" type="button">合成背景</button>
+          <button class="wb-btn mono" id="wbBgDownload" type="button">下载 PNG</button>
+          <button class="wb-btn mono" id="wbBgAgent" type="button">让 Agent 生成场景</button>
+        </div>
+        <p class="mono wb-note" id="wbBgNote">「让 Agent 生成场景」把原图交给后端：抠取 → 生成新环境 → 重打光 → 阴影 → 成片。</p>
+      </aside>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 </body>
 </html>
